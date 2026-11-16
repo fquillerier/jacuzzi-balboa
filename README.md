@@ -7,6 +7,9 @@ Bazat pe proiectul [netmindz/balboa_GL_ML_spa_control](https://github.com/netmin
 ## Ce face
 
 - Pagină web pentru telefon: temperatura apei, temperatura dorită (+/−), încălzire, jeturi 1 și 2, bule (blower), lumină, mod Standard / Economic / Somn.
+- Grafic cu temperatura apei din ultimele 24 de ore (un punct la 5 minute; se pierde la repornirea modulului).
+- Personalizare din pagină: numele afișat sus, numele fiecărei funcții și ce funcții apar. Setările se salvează în modul, deci arată la fel pe toate telefoanele.
+- Iconiță pe ecranul telefonului (Chrome: ⋮ → „Adaugă pe ecranul de pornire”; Safari: Partajare → „Adaugă pe ecranul principal”).
 - Actualizare în timp real (WebSocket), fără reîncărcarea paginii.
 - Configurare WiFi din telefon, fără parole în cod.
 - Home Assistant prin MQTT, opțional.
@@ -60,7 +63,7 @@ pio run -e esp32dev -t upload
 pio device monitor
 ```
 
-Pagina web se editează în `sensor/web/index.html`. Fișierul `sensor/src/webui.h` se regenerează automat la fiecare build.
+Pagina web se editează în `sensor/web/index.html`. Fișierul `sensor/src/webui.h` se regenerează automat la fiecare build. Iconițele se refac cu `python sensor/web/make_icons.py` (necesită Pillow).
 
 ## Prima pornire
 
@@ -75,7 +78,7 @@ Dacă rețeaua salvată nu e disponibilă la pornire, hotspot-ul Jacuzzi-Setup s
 
 - **Temperatura dorită:** apasă + sau −; după 1,5 secunde fără apăsări, valoarea se trimite. Dacă temperatura setată apare „Necunoscută”, o apăsare o citește din jacuzzi.
 - **Jeturi, bule, lumină:** fiecare apăsare e echivalentă cu butonul de pe panou.
-- **Setări și informații** (jos în pagină): versiune firmware, actualizare firmware, schimbarea rețelei WiFi.
+- **Setări și informații** (jos în pagină): personalizare (nume, funcții afișate), versiune firmware, actualizare firmware, schimbarea rețelei WiFi.
 
 ## Actualizare firmware prin WiFi
 
@@ -89,6 +92,8 @@ Din pagină: **Setări și informații → Actualizare firmware** (sau `http://j
 | `GET /api/cmd?a=up\|down\|light\|jet1\|jet2\|aux\|mode\|time` | O apăsare de buton |
 | `GET /api/target?t=37.5` | Setează temperatura (26–40 °C, pas 0,5) |
 | `GET /api/mode?m=0\|1\|2` | Standard / Economic / Somn |
+| `GET /api/config` / `POST /api/config` | Setările paginii (nume, funcții afișate) |
+| `GET /api/history` | Temperatura din ultimele 24 h |
 | `POST /api/wifireset` | Șterge rețeaua WiFi și repornește în modul de configurare |
 | WebSocket port 81 | Starea în timp real |
 

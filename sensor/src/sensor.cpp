@@ -31,7 +31,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.0.0"
+#define FW_VERSION "1.1.0"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -473,6 +473,13 @@ void setup() {
     webserver.on("/api/target", handleApiTarget);
     webserver.on("/api/mode", handleApiMode);
     webserver.on("/api/wifireset", HTTP_POST, handleApiWifiReset);
+    webserver.on("/api/config", HTTP_GET, handleApiConfigGet);
+    webserver.on("/api/config", HTTP_POST, handleApiConfigPost);
+    webserver.on("/api/history", handleApiHistory);
+    webserver.on("/manifest.webmanifest", handleManifest);
+    webserver.on("/icon-180.png", handleIcon180);
+    webserver.on("/icon-192.png", handleIcon192);
+    webserver.on("/icon-512.png", handleIcon512);
     webserver.begin();
     webSocket.begin();
     webSocket.onEvent(webSocketEvent);
@@ -697,6 +704,8 @@ void loop() {
         lastUptime = millis() / 1000;
         uptime.setValue(lastUptime);
     }
+
+    historyTick();
 
 #ifdef ESP32
     esp_task_wdt_reset();

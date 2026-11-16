@@ -22,11 +22,17 @@ if ")" + DELIM + '"' in html:
     raise SystemExit("index.html contains the raw string delimiter")
 
 out = (
-    "// GENERATED from web/index.html by web/gen_webui.py - edit the HTML, not this file\n"
+    "// GENERATED from web/index.html and web/icon-*.png by web/gen_webui.py - do not edit\n"
     "#pragma once\n"
     "#include <pgmspace.h>\n"
     'const char INDEX_HTML[] PROGMEM = R"' + DELIM + "(" + html + ")" + DELIM + '";\n'
 )
+
+for size in (180, 192, 512):
+    with open(os.path.join(ROOT, "web", "icon-%d.png" % size), "rb") as f:
+        data = f.read()
+    rows = [", ".join("0x%02x" % b for b in data[i:i + 20]) for i in range(0, len(data), 20)]
+    out += "const uint8_t ICON_%d_PNG[] PROGMEM = {\n  %s\n};\n" % (size, ",\n  ".join(rows))
 
 old = None
 if os.path.exists(DST):

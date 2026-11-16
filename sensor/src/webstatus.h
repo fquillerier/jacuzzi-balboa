@@ -45,6 +45,7 @@ String getStatusJSON() {
 }
 
 void handleRoot() {
+  webserver.sendHeader("Cache-Control", "no-cache");
   webserver.send_P(200, "text/html", INDEX_HTML);
 }
 
@@ -152,6 +153,115 @@ void handleApiWifiReset() {
   WiFiManager wm;
   wm.resetSettings();
   ESP.restart();
+}
+
+// ---------------------------------------------------------------------------
+// Page settings shared by every phone: header title, function names, which
+// functions are shown. Stored on the ESP32 (NVS) so all phones see the same page.
+// The cfg blob is JSON written by the page; the firmware only stores it.
+// ---------------------------------------------------------------------------
+#define UI_TITLE_MAX_BYTES 120
+#define UI_CFG_MAX_BYTES 1500
+
+String uiTitle() {
+  String t = prefs.getString("uiTitle", "");
+  return t.length() > 0 ? t : String("Jacuzzi");
+}
+
+// GET /api/config
+void handleApiConfigGet() {
+  String cfg = prefs.getString("uiCfg", "");
+  String j = "{\"title\": \"" + jsonEscape(uiTitle()) + "\", \"cfg\": \"" + jsonEscape(cfg) + "\"}";
+  webserver.send(200, "application/json", j);
+}
+
+// POST /api/config  (form fields: title, cfg)
+void handleApiConfigPost() {
+  String title = webserver.arg("title");
+  title.trim();
+  String cfg = webserver.arg("cfg");
+  if (title.length() == 0 || title.length() > UI_TITLE_MAX_BYTES) {
+    sendApiResult(false, "bad title");
+    return;
+  }
+  if (cfg.length() > UI_CFG_MAX_BYTES || (cfg.length() > 0 && cfg[0] != '{')) {
+    sendApiResult(false, "bad cfg");
+    return;
+  }
+  prefs.putString("uiTitle", title);
+  prefs.putString("uiCfg", cfg);
+  sendApiResult(true, "saved");
+}
+
+// ---------------------------------------------------------------------------
+// Home-screen icon: web app manifest (uses the custom title) and PNG icons
+// ---------------------------------------------------------------------------
+void handleManifest() {
+  String t = jsonEscape(uiTitle());
+  String j = "{\"name\": \"" + t + "\", \"short_name\": \"" + t + "\", \"start_url\": \"/\", \"scope\": \"/\", "
+             "\"display\": \"standalone\", \"background_color\": \"#f3f5f7\", \"theme_color\": \"#0e7490\", "
+             "\"icons\": [{\"src\": \"/icon-192.png\", \"sizes\": \"192x192\", \"type\": \"image/png\"}, "
+             "{\"src\": \"/icon-512.png\", \"sizes\": \"512x512\", \"type\": \"image/png\"}]}";
+  webserver.send(200, "application/manifest+json", j);
+}
+
+void sendIcon(const uint8_t* data, size_t len) {
+  webserver.sendHeader("Cache-Control", "max-age=604800");
+  webserver.send_P(200, "image/png", (PGM_P)data, len);
+}
+void handleIcon180() { sendIcon(ICON_180_PNG, sizeof(ICON_180_PNG)); }
+void handleIcon192() { sendIcon(ICON_192_PNG, sizeof(ICON_192_PNG)); }
+void handleIcon512() { sendIcon(ICON_512_PNG, sizeof(ICON_512_PNG)); }
+
+// ---------------------------------------------------------------------------
+// Water temperature history: one sample every 5 minutes, last 24 hours, in RAM
+// (lost on restart - writing it to flash every 5 minutes would wear the flash).
+// ---------------------------------------------------------------------------
+#define HIST_N 288
+#define HIST_INTERVAL_MS 300000UL
+#define HIST_GAP INT16_MIN
+
+int16_t histTemp[HIST_N];   // degrees C x10, HIST_GAP when no reading
+uint8_t histHeat[HIST_N];   // 1 when the heater was on
+uint16_t histCount = 0;
+uint16_t histHead = 0;      // next slot to write
+unsigned long histLast = 0;
+
+void historyTick() {
+  unsigned long now = millis();
+  if (histCount == 0) {
+    if (tubTemp <= 0) return;  // start with the first real reading
+  } else if (now - histLast < HIST_INTERVAL_MS) {
+    return;
+  }
+  histLast = now;
+  histTemp[histHead] = tubTemp > 0 ? (int16_t)lround(tubTemp * 10) : HIST_GAP;
+  histHeat[histHead] = heaterState ? 1 : 0;
+  histHead = (histHead + 1) % HIST_N;
+  if (histCount < HIST_N) histCount++;
+}
+
+// GET /api/history -> {"interval": 300, "age": <s since newest>, "t": [oldest..newest], "h": "0101.."}
+void handleApiHistory() {
+  String t;
+  String h;
+  t.reserve(histCount * 5 + 8);
+  h.reserve(histCount + 2);
+  uint16_t start = (histHead + HIST_N - histCount) % HIST_N;
+  for (uint16_t i = 0; i < histCount; i++) {
+    uint16_t k = (start + i) % HIST_N;
+    if (i) t += ',';
+    if (histTemp[k] == HIST_GAP) {
+      t += "null";
+    } else {
+      t += String(histTemp[k] / 10.0, 1);
+    }
+    h += histHeat[k] ? '1' : '0';
+  }
+  unsigned long age = histCount ? (millis() - histLast) / 1000 : 0;
+  String j = "{\"interval\": " + String(HIST_INTERVAL_MS / 1000) + ", \"age\": " + String(age) +
+             ", \"t\": [" + t + "], \"h\": \"" + h + "\"}";
+  webserver.send(200, "application/json", j);
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {

@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0e7490">
 <title>Jacuzzi</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Jacuzzi" id="appTitle">
 <style>
 :root{--bg:#f3f5f7;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#0e7490;--accent-bg:#e0f2f7;--on:#0e7490;--warm:#c2410c;--warm-bg:#fff1e8;--warn:#92400e;--warn-bg:#fef3c7;--ok:#15803d}
 @media (prefers-color-scheme:dark){:root{--bg:#0b1117;--card:#151d26;--text:#e5edf5;--muted:#8fa1b3;--line:#253241;--accent:#38bdf8;--accent-bg:#0c2a38;--on:#38bdf8;--warm:#fb923c;--warm-bg:#3a1d0c;--warn:#fbbf24;--warn-bg:#3a2a07;--ok:#4ade80}}
@@ -53,12 +60,25 @@ summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 2px}
 .btn.danger{color:#b91c1c}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
 .toast.show{opacity:1}
+.hide{display:none!important}
+.chart{width:100%;height:auto;display:block;margin-top:4px}
+.ch-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ch-heat{fill:var(--warm-bg)}
+.ch-grid{stroke:var(--line);stroke-width:1}
+.ch-txt{fill:var(--muted);font-size:10px}
+.fld{display:block;font-size:14px;margin:4px 0 12px}
+.fld input{display:block;width:100%;margin-top:6px}
+input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+.frow{display:flex;align-items:center;gap:10px;padding:6px 0}
+.frow input[type=text]{flex:1;min-width:0}
+.frow input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 </style>
 </head>
 <body>
 <main>
   <header>
-    <h1>Jacuzzi</h1>
+    <h1 id="title">Jacuzzi</h1>
     <div class="conn"><span id="spaTime"></span><span class="dot" id="dot"></span><span id="connTxt">Se conectează</span></div>
   </header>
 
@@ -75,6 +95,12 @@ summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 2px}
     <div class="sub" id="ttt"></div>
   </section>
 
+  <section class="card" id="graphCard">
+    <div class="label" id="graphLabel">Istoric temperatură</div>
+    <svg class="chart" id="chart" viewBox="0 0 320 140" role="img" aria-label="Temperatura apei în ultimele 24 de ore"></svg>
+    <div class="sub" id="histHint"></div>
+  </section>
+
   <section class="card">
     <div class="label">Temperatura dorită</div>
     <div class="target">
@@ -87,15 +113,15 @@ summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 2px}
     <div class="sub" id="targetHint"></div>
   </section>
 
-  <div class="grid">
+  <div class="grid" id="tiles">
     <button class="tile" id="jet1"><span class="name">Jeturi 1</span><span class="st">Oprit</span></button>
     <button class="tile" id="jet2"><span class="name">Jeturi 2</span><span class="st">Oprit</span></button>
-    <button class="tile" id="aux"><span class="name">Bule (blower)</span><span class="st">Pornire / oprire</span></button>
+    <button class="tile" id="aux"><span class="name">Bule</span><span class="st">Pornire / oprire</span></button>
     <button class="tile" id="light"><span class="name">Lumină</span><span class="st">Stinsă</span></button>
   </div>
 
-  <section class="card">
-    <div class="label">Mod de funcționare</div>
+  <section class="card" id="modeCard">
+    <div class="label" id="modeLabel">Mod de funcționare</div>
     <div class="seg" id="modes">
       <button data-m="0">Standard</button>
       <button data-m="1">Economic</button>
@@ -106,6 +132,15 @@ summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 2px}
 
   <details>
     <summary>Setări și informații</summary>
+    <section class="card">
+      <div class="label">Personalizare</div>
+      <label class="fld">Numele afișat sus<input type="text" id="cfgTitle" maxlength="30" autocomplete="off"></label>
+      <div class="small">Funcții afișate (debifează ce nu folosești) și numele lor:</div>
+      <div id="cfgRows"></div>
+      <button class="btn primary" id="cfgSave">Salvează</button>
+      <p class="small">Setările se salvează în modul și apar la fel pe toate telefoanele.</p>
+      <p class="small">Iconiță pe ecranul telefonului: pe Android, în Chrome, meniul ⋮ → „Adaugă pe ecranul de pornire”. Pe iPhone, în Safari, butonul Partajare → „Adaugă pe ecranul principal”.</p>
+    </section>
     <section class="card">
       <div class="kv"><span>Firmware</span><span id="fw">-</span></div>
       <div class="kv"><span>Pornit de</span><span id="uptime">-</span></div>
@@ -219,10 +254,7 @@ summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 2px}
 
   $('plus').onclick=function(){ step(0.5); };
   $('minus').onclick=function(){ step(-0.5); };
-  $('jet1').onclick=function(){ cmd('jet1','Jeturi 1'); };
-  $('jet2').onclick=function(){ cmd('jet2','Jeturi 2'); };
-  $('aux').onclick=function(){ cmd('aux','Bule'); };
-  $('light').onclick=function(){ cmd('light','Lumină'); };
+  ['jet1','jet2','aux','light'].forEach(function(k){ $(k).onclick=function(){ cmd(k, featName(k)); }; });
   var mb=$('modes').querySelectorAll('button');
   for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mod: '+MODE_NAMES[m]):'Nu am putut schimba modul'); }); }; }
   $('otaLink').href='http://'+location.hostname+':8080/update';
@@ -231,7 +263,106 @@ summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 2px}
     fetch('/api/wifireset',{method:'POST'}).then(function(){ toast('Repornesc. Conectează-te la „Jacuzzi-Setup”.'); });
   };
 
+  // ---- page settings (stored on the module, same on every phone) ----
+  var FEATS=[
+    {k:'graph', def:'Istoric temperatură'},
+    {k:'jet1',  def:'Jeturi 1'},
+    {k:'jet2',  def:'Jeturi 2'},
+    {k:'aux',   def:'Bule'},
+    {k:'light', def:'Lumină'},
+    {k:'mode',  def:'Mod de funcționare'}
+  ];
+  var CFG={title:'Jacuzzi', f:{}};
+  function feat(k){ var f=CFG.f[k]||{}; var d=FEATS.filter(function(x){return x.k===k;})[0]; return {n:(f.n&&String(f.n).trim())||d.def, v:f.v!==0}; }
+  function featName(k){ return feat(k).n; }
+
+  function applyCfg(){
+    $('title').textContent=CFG.title; document.title=CFG.title; $('appTitle').setAttribute('content',CFG.title);
+    var anyTile=false;
+    ['jet1','jet2','aux','light'].forEach(function(k){
+      var f=feat(k), el=$(k);
+      el.querySelector('.name').textContent=f.n;
+      el.classList.toggle('hide',!f.v);
+      if(f.v) anyTile=true;
+    });
+    $('tiles').classList.toggle('hide',!anyTile);
+    $('modeLabel').textContent=feat('mode').n; $('modeCard').classList.toggle('hide',!feat('mode').v);
+    $('graphLabel').textContent=feat('graph').n+' · 24 h'; $('graphCard').classList.toggle('hide',!feat('graph').v);
+  }
+
+  function buildCfgForm(){
+    $('cfgTitle').value=CFG.title;
+    var box=$('cfgRows'); box.innerHTML='';
+    FEATS.forEach(function(d){
+      var f=feat(d.k);
+      var row=document.createElement('div'); row.className='frow';
+      var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=f.v; cb.id='cv_'+d.k; cb.setAttribute('aria-label','Afișează '+d.def);
+      var tx=document.createElement('input'); tx.type='text'; tx.maxLength=24; tx.value=f.n; tx.placeholder=d.def; tx.id='cn_'+d.k;
+      row.appendChild(cb); row.appendChild(tx); box.appendChild(row);
+    });
+  }
+
+  function loadCfg(){
+    return api('/api/config').then(function(r){
+      if(r && typeof r.title==='string' && r.title) CFG.title=r.title;
+      try{ var c=JSON.parse(r.cfg||'{}'); if(c && c.f) CFG.f=c.f; }catch(e){}
+      applyCfg(); buildCfgForm();
+    });
+  }
+
+  $('cfgSave').onclick=function(){
+    var title=$('cfgTitle').value.trim();
+    if(!title){ toast('Scrie un nume'); $('cfgTitle').focus(); return; }
+    var f={};
+    FEATS.forEach(function(d){
+      var n=$('cn_'+d.k).value.trim();
+      f[d.k]={v:$('cv_'+d.k).checked?1:0};
+      if(n && n!==d.def) f[d.k].n=n;
+    });
+    var body='title='+encodeURIComponent(title)+'&cfg='+encodeURIComponent(JSON.stringify({f:f}));
+    fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
+      .then(function(r){ return r.json(); })
+      .then(function(r){
+        if(r.ok){ CFG.title=title; CFG.f=f; applyCfg(); buildCfgForm(); toast('Salvat'); loadHistory(); }
+        else toast('Nu am putut salva');
+      })
+      .catch(function(){ toast('Nu am putut salva'); });
+  };
+
+  // ---- 24 h temperature chart ----
+  function drawChart(H){
+    var svg=$('chart'), W=320, Ht=140, L=30, R=6, T=8, B=20;
+    var t=(H&&H.t)||[], n=t.length, iv=(H&&H.interval)||300, age=(H&&H.age)||0;
+    var vals=t.filter(function(v){return v!==null;});
+    if(vals.length<2){
+      svg.innerHTML='';
+      $('histHint').textContent='Se adună date: un punct la fiecare 5 minute. Istoricul se pierde la repornirea modulului.';
+      return;
+    }
+    var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
+    if(mx-mn<2){ var mid=(mx+mn)/2; mn=mid-1; mx=mid+1; }
+    mn=Math.floor(mn); mx=Math.ceil(mx);
+    var span=86400;
+    function X(i){ var ago=age+(n-1-i)*iv; return L+(W-L-R)*(1-ago/span); }
+    function Y(v){ return T+(Ht-T-B)*(1-(v-mn)/(mx-mn)); }
+    var out='';
+    var hs=(H.h||'');
+    for(var i=0;i<n;i++){ if(hs.charAt(i)==='1'){ var x0=Math.max(L,X(i)), x1=Math.min(W-R,X(i)+(W-L-R)*iv/span); if(x1>x0) out+='<rect class="ch-heat" x="'+x0.toFixed(1)+'" y="'+T+'" width="'+(x1-x0).toFixed(1)+'" height="'+(Ht-T-B)+'"/>'; } }
+    [mn,(mn+mx)/2,mx].forEach(function(v){ var y=Y(v).toFixed(1); out+='<line class="ch-grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'"/><text class="ch-txt" x="'+(L-4)+'" y="'+y+'" text-anchor="end" dominant-baseline="middle">'+(Math.round(v*10)/10)+'°</text>'; });
+    [['−24 h',L,'start'],['−12 h',L+(W-L-R)/2,'middle'],['acum',W-R,'end']].forEach(function(a){ out+='<text class="ch-txt" x="'+a[1]+'" y="'+(Ht-4)+'" text-anchor="'+a[2]+'">'+a[0]+'</text>'; });
+    var seg=[];
+    function flush(){ if(seg.length>1) out+='<polyline class="ch-line" points="'+seg.join(' ')+'"/>'; seg=[]; }
+    for(var j=0;j<n;j++){ if(t[j]===null){ flush(); continue; } var xx=X(j); if(xx<L){ continue; } seg.push(xx.toFixed(1)+','+Y(t[j]).toFixed(1)); }
+    flush();
+    svg.innerHTML=out;
+    var hasHeat=hs.indexOf('1')>=0;
+    $('histHint').textContent='Minim '+Math.min.apply(null,vals).toFixed(1)+' °C · maxim '+Math.max.apply(null,vals).toFixed(1)+' °C'+(hasHeat?' · zonele colorate: încălzire pornită':'');
+  }
+  function loadHistory(){ if(!feat('graph').v) return; api('/api/history').then(function(r){ if(r && r.t) drawChart(r); }); }
+  setInterval(loadHistory, 300000);
+
   render();
+  loadCfg().then(loadHistory);
   connectWs();
 })();
 </script>
