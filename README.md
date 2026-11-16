@@ -8,6 +8,7 @@ Bazat pe proiectul [netmindz/balboa_GL_ML_spa_control](https://github.com/netmin
 
 - Pagină web pentru telefon: temperatura apei, temperatura dorită (+/−), încălzire, jeturi 1 și 2, bule (blower), lumină, mod Standard / Economic / Somn.
 - Temperatura de afară și vremea, pentru localitatea setată în pagină. O ia telefonul de la serviciul gratuit [Open-Meteo](https://open-meteo.com) (uz necomercial), deci apare doar când telefonul are internet.
+- Coduri de eroare (opțional, bifa „Coduri eroare” din Personalizare, implicit dezactivată): când afișajul jacuzzi-ului arată un cod (OHH, dr, SnA, LF…), sub grafic apare codul cu explicația în română. Codurile necunoscute apar ca text brut. Formatul exact al mesajelor de eroare pe magistrală nu e confirmat pe toate plăcile.
 - Grafic cu temperatura apei din ultimele 24 de ore (un punct la 5 minute; se pierde la repornirea modulului).
 - Personalizare din pagină: numele afișat sus, localitatea pentru vreme, numele fiecărei funcții și ce funcții apar. Setările se salvează în modul, deci arată la fel pe toate telefoanele.
 - Iconiță pe ecranul telefonului (Chrome: ⋮ → „Adaugă pe ecranul de pornire”; Safari: Partajare → „Adaugă pe ecranul principal”).

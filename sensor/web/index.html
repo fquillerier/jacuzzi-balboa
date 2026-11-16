@@ -61,6 +61,13 @@ summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 2px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
 .toast.show{opacity:1}
 .hide{display:none!important}
+.err.sev-stop{background:#fef2f2;border-color:#fca5a5}
+.err.sev-warn{background:var(--warn-bg);border-color:#fcd34d}
+.err.sev-stop .errcode{color:#b91c1c}
+.err.sev-warn .errcode{color:var(--warn)}
+@media (prefers-color-scheme:dark){.err.sev-stop{background:#3b1414;border-color:#7f1d1d}.err.sev-stop .errcode{color:#fca5a5}}
+.errcode{font-size:22px;font-weight:700;letter-spacing:1px}
+.errtxt{font-size:14px;margin-top:4px}
 .wx{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
 .wx b{color:var(--text);font-weight:600}
 .wxi svg{width:22px;height:22px;display:block;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -135,6 +142,12 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
     <div class="sub" id="histHint"></div>
   </section>
 
+  <section class="card err hide" id="errCard">
+    <div class="label">Cod de eroare</div>
+    <div class="errcode" id="errCode"></div>
+    <div class="errtxt" id="errTxt"></div>
+  </section>
+
   <details>
     <summary>Setări și informații</summary>
     <section class="card">
@@ -144,6 +157,7 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
       <div class="small" id="cfgLocHint" style="margin:-6px 0 12px"></div>
       <div class="small">Funcții afișate (debifează ce nu folosești) și numele lor:</div>
       <div id="cfgRows"></div>
+      <div class="frow"><input type="checkbox" id="cfgErr"><label for="cfgErr" style="font-size:15px">Coduri eroare <span class="small">(afișează sub grafic erorile raportate de jacuzzi)</span></label></div>
       <button class="btn primary" id="cfgSave">Salvează</button>
       <p class="small">Setările se salvează în modul și apar la fel pe toate telefoanele.</p>
       <p class="small">Iconiță pe ecranul telefonului: pe Android, în Chrome, meniul ⋮ → „Adaugă pe ecranul de pornire”. Pe iPhone, în Safari, butonul Partajare → „Adaugă pe ecranul principal”.</p>
@@ -220,7 +234,7 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
 
   function setTile(id,on,txt){ var el=$(id); el.classList.toggle('on',on); el.querySelector('.st').textContent=txt; }
 
-  function onStatus(d){ S=d; lastMsg=Date.now(); setConn(true); render(); }
+  function onStatus(d){ S=d; lastMsg=Date.now(); setConn(true); render(); renderErr(); }
 
   function setConn(live){ $('dot').className='dot'+(live?' live':''); $('connTxt').textContent= live?'Conectat':'Fără legătură'; }
 
@@ -280,7 +294,7 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
     {k:'mode',  def:'Mod de funcționare'},
     {k:'graph', def:'Istoric temperatură'}
   ];
-  var CFG={title:'Jacuzzi', f:{}, loc:null};
+  var CFG={title:'Jacuzzi', f:{}, loc:null, err:false};
   function feat(k){ var f=CFG.f[k]||{}; var d=FEATS.filter(function(x){return x.k===k;})[0]; return {n:(f.n&&String(f.n).trim())||d.def, v:f.v!==0}; }
   function featName(k){ return feat(k).n; }
 
@@ -297,10 +311,42 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
     $('modeLabel').textContent=feat('mode').n; $('modeCard').classList.toggle('hide',!feat('mode').v);
     $('graphLabel').textContent=feat('graph').n+' · 24 h'; $('graphCard').classList.toggle('hide',!feat('graph').v);
     $('wx').classList.toggle('hide',!(feat('weather').v && CFG.loc && wxData));
+    renderErr();
+  }
+
+  // ---- error codes from the panel display (Balboa GL/EL systems) ----
+  var ERR_CODES=[
+    {c:['OHH','HH'], s:'stop', t:'Supraîncălzire la încălzitor (în jur de 48 °C). Jacuzzi-ul s-a oprit. Nu intra în apă.'},
+    {c:['OHS','OH'], s:'stop', t:'Supraîncălzire a apei (în jur de 43 °C). Jacuzzi-ul s-a oprit. Nu intra în apă.'},
+    {c:['SNA','SA'], s:'stop', t:'Senzorul de temperatură A nu funcționează. Jacuzzi-ul e oprit.'},
+    {c:['SNB','SB'], s:'stop', t:'Senzorul de temperatură B nu funcționează. Jacuzzi-ul e oprit.'},
+    {c:['DY','DRY'], s:'stop', t:'Apă insuficientă în încălzitor. Verifică nivelul apei și filtrul.'},
+    {c:['LF'], s:'stop', t:'Debit scăzut persistent. Încălzitorul e oprit; restul funcțiilor merg. Verifică filtrul și nivelul apei.'},
+    {c:['FLO','FL'], s:'warn', t:'Problemă de debit sau la senzorul de presiune. Verifică filtrul și nivelul apei.'},
+    {c:['HFL','HL'], s:'warn', t:'Diferență mare între senzorii de temperatură; posibil debit slab (filtru murdar sau aer în circuit).'},
+    {c:['SN','SNS'], s:'warn', t:'Senzorii de temperatură dau valori diferite între ei.'},
+    {c:['DR'], s:'warn', t:'Posibil apă insuficientă în încălzitor. Jacuzzi-ul retestează în scurt timp.'},
+    {c:['ICE','IC'], s:'info', t:'Pericol de îngheț. Pompele pornesc automat ca să protejeze instalația.'},
+    {c:['COOL','COL'], s:'info', t:'Apa e mult sub temperatura setată.'},
+    {c:['PR'], s:'info', t:'Mod de amorsare după pornire. Durează câteva minute.'},
+    {c:['--','---','----','--C','--F'], s:'info', t:'Temperatura nu e disponibilă încă (pornire sau amorsare).'}
+  ];
+  var NOT_ERR=['STD','ST','ECN','EC','SLP','SL'];
+  function renderErr(){
+    var card=$('errCard');
+    var raw=(S.msg||'').trim();
+    if(!CFG.err || !S.msgActive || !raw){ card.classList.add('hide'); return; }
+    var key=raw.toUpperCase().replace(/[^A-Z0-9-]/g,'');
+    if(NOT_ERR.indexOf(key)>=0){ card.classList.add('hide'); return; }
+    var hit=ERR_CODES.filter(function(e){ return e.c.indexOf(key)>=0; })[0];
+    $('errCode').textContent=raw;
+    $('errTxt').textContent=hit ? hit.t : 'Mesaj necunoscut afișat de jacuzzi. Caută codul în manualul Balboa.';
+    card.className='card err sev-'+(hit?hit.s:'warn');
   }
 
   function buildCfgForm(){
     $('cfgTitle').value=CFG.title;
+    $('cfgErr').checked=!!CFG.err;
     $('cfgLoc').value=CFG.loc ? CFG.loc.q : '';
     $('cfgLocHint').textContent=CFG.loc ? ('Găsită: '+CFG.loc.name) : 'Fără localitate, temperatura de afară nu apare.';
     var box=$('cfgRows'); box.innerHTML='';
@@ -316,7 +362,7 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
   function loadCfg(){
     return api('/api/config').then(function(r){
       if(r && typeof r.title==='string' && r.title) CFG.title=r.title;
-      try{ var c=JSON.parse(r.cfg||'{}'); if(c && c.f) CFG.f=c.f; if(c && c.loc && typeof c.loc.lat==='number') CFG.loc=c.loc; }catch(e){}
+      try{ var c=JSON.parse(r.cfg||'{}'); if(c && c.f) CFG.f=c.f; if(c && c.loc && typeof c.loc.lat==='number') CFG.loc=c.loc; CFG.err=!!(c && c.err); }catch(e){}
       applyCfg(); buildCfgForm();
     });
   }
@@ -337,11 +383,12 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
     else locP=geocode(q);
     locP.then(function(loc){
       if(q && !loc){ toast('Nu am găsit localitatea „'+q+'”'); return; }
-      var body='title='+encodeURIComponent(title)+'&cfg='+encodeURIComponent(JSON.stringify({f:f,loc:loc}));
+      var errOn=$('cfgErr').checked;
+      var body='title='+encodeURIComponent(title)+'&cfg='+encodeURIComponent(JSON.stringify({f:f,loc:loc,err:errOn?1:0}));
       return fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
         .then(function(r){ return r.json(); })
         .then(function(r){
-          if(r.ok){ CFG.title=title; CFG.f=f; CFG.loc=loc; wxData=null; applyCfg(); buildCfgForm(); toast('Salvat'); loadHistory(); loadWeather(); }
+          if(r.ok){ CFG.title=title; CFG.f=f; CFG.loc=loc; CFG.err=errOn; wxData=null; applyCfg(); buildCfgForm(); toast('Salvat'); loadHistory(); loadWeather(); }
           else toast('Nu am putut salva');
         });
     }).catch(function(){ toast('Nu am putut salva'); });

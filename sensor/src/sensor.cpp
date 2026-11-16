@@ -31,7 +31,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.2.0"
+#define FW_VERSION "1.3.0"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -154,6 +154,9 @@ boolean heaterState = false;
 boolean lightState = false;
 float tubpowerCalc = 0;
 double tubTemp = -1;
+// Last non-temperature text shown on the panel display (error codes like OHH, dr, SnA)
+String panelMsg = "";
+unsigned long panelMsgSeen = 0;
 double tubTargetTemp = -1;
 String state = "unknown";
 bool commandPending;
@@ -189,6 +192,7 @@ void hexCharacterStringToBytes(byte* byteArray, const char* hexString);
 void handleMessage(size_t len, uint8_t buf[]);
 String HexString2TimeString(String hexstring);
 String HexString2ASCIIString(String hexstring);
+void notePanelMsg(String hex);
 void sendCommand();
 
 void clearRXbuffer(void) {
@@ -907,6 +911,7 @@ void handleMessage(size_t len, uint8_t buf[]) {
                         }
                     }
                 } else if (result.substring(10, 12) == "2d") {  // "-"
+                    notePanelMsg(result.substring(4, 12));
                                                                 //          Serial.println("temp = unknown");
                                                                 //          telnetSend("temp = unknown");
                 } else {
@@ -927,7 +932,8 @@ void handleMessage(size_t len, uint8_t buf[]) {
                 currentState.setValue(state.c_str());
             }
         } else {
-            // FA but not temp data
+            // FA but not temp data - the display shows text instead (error codes, messages)
+            notePanelMsg(result.substring(4, 12));
             lastRaw2 = result.substring(4, 28);
             rawData2.setValue(lastRaw2.c_str());
         }
@@ -1032,6 +1038,23 @@ String HexString2TimeString(String hexstring) {
     time.concat(minute);
 
     return time;
+}
+
+// Remember display text that isn't a temperature, keeping only printable characters
+void notePanelMsg(String hex) {
+    String raw = HexString2ASCIIString(hex);
+    String clean = "";
+    for (size_t i = 0; i < raw.length(); i++) {
+        char c = raw[i];
+        if (c >= 0x20 && c < 0x7f && c != '"' && c != '\\') clean += c;
+    }
+    clean.trim();
+    if (clean.length() == 0) return;
+    if (clean != panelMsg) {
+        telnetSend("display: " + clean);
+    }
+    panelMsg = clean;
+    panelMsgSeen = millis();
 }
 
 String HexString2ASCIIString(String hexstring) {

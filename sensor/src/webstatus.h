@@ -39,6 +39,9 @@ String getStatusJSON() {
   j += ", \"panel\": " + String(panelDetected ? "true" : "false");
   j += ", \"mqtt\": " + String(mqttEnabled ? "true" : "false");
   j += ", \"uptime\": " + String(lastUptime);
+  j += ", \"msg\": \"" + jsonEscape(panelMsg) + "\"";
+  // true while the display text was seen in the last 60 s (Balboa alternates error codes with the temperature)
+  j += ", \"msgActive\": " + String((panelMsgSeen && millis() - panelMsgSeen < 60000UL) ? "true" : "false");
   j += ", \"fw\": \"" FW_VERSION "\"";
   j += " } }";
   return j;
