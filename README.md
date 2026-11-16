@@ -7,8 +7,9 @@ Bazat pe proiectul [netmindz/balboa_GL_ML_spa_control](https://github.com/netmin
 ## Ce face
 
 - Pagină web pentru telefon: temperatura apei, temperatura dorită (+/−), încălzire, jeturi 1 și 2, bule (blower), lumină, mod Standard / Economic / Somn.
+- Temperatura de afară și vremea, pentru localitatea setată în pagină. O ia telefonul de la serviciul gratuit [Open-Meteo](https://open-meteo.com) (uz necomercial), deci apare doar când telefonul are internet.
 - Grafic cu temperatura apei din ultimele 24 de ore (un punct la 5 minute; se pierde la repornirea modulului).
-- Personalizare din pagină: numele afișat sus, numele fiecărei funcții și ce funcții apar. Setările se salvează în modul, deci arată la fel pe toate telefoanele.
+- Personalizare din pagină: numele afișat sus, localitatea pentru vreme, numele fiecărei funcții și ce funcții apar. Setările se salvează în modul, deci arată la fel pe toate telefoanele.
 - Iconiță pe ecranul telefonului (Chrome: ⋮ → „Adaugă pe ecranul de pornire”; Safari: Partajare → „Adaugă pe ecranul principal”).
 - Actualizare în timp real (WebSocket), fără reîncărcarea paginii.
 - Configurare WiFi din telefon, fără parole în cod.
