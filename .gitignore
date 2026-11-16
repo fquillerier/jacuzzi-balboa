@@ -1,0 +1,4 @@
+.pio/
+.vscode/
+sensor/src/wifi_secrets.h
+out/

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e7490">
+<title>Jacuzzi</title>
+<style>
+:root{--bg:#f3f5f7;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#0e7490;--accent-bg:#e0f2f7;--on:#0e7490;--warm:#c2410c;--warm-bg:#fff1e8;--warn:#92400e;--warn-bg:#fef3c7;--ok:#15803d}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1117;--card:#151d26;--text:#e5edf5;--muted:#8fa1b3;--line:#253241;--accent:#38bdf8;--accent-bg:#0c2a38;--on:#38bdf8;--warm:#fb923c;--warm-bg:#3a1d0c;--warn:#fbbf24;--warn-bg:#3a2a07;--ok:#4ade80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+main{max-width:480px;margin:0 auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 16px}
+h1{font-size:22px;font-weight:600;margin:0}
+.conn{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.dot.live{background:var(--ok)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.banner{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:14px;display:none}
+.banner.show{display:block}
+.temp{display:flex;align-items:flex-end;justify-content:space-between}
+.big{font-size:64px;font-weight:600;line-height:1;letter-spacing:-2px}
+.big small{font-size:24px;font-weight:500;letter-spacing:0;color:var(--muted);margin-left:2px}
+.label{font-size:13px;color:var(--muted);margin-bottom:6px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:5px 10px;border-radius:999px;background:var(--line);color:var(--muted)}
+.badge.heat{background:var(--warm-bg);color:var(--warm)}
+.sub{font-size:13px;color:var(--muted);margin-top:10px;min-height:18px}
+.target{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tval{font-size:30px;font-weight:600}
+.tval.pending{color:var(--accent)}
+.stepper{display:flex;gap:10px}
+.round{width:56px;height:56px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:28px;line-height:1;cursor:pointer}
+.round:active{transform:scale(.96)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;text-align:left;color:var(--text);font:inherit;cursor:pointer;min-height:92px;display:flex;flex-direction:column;justify-content:space-between}
+.tile:active{transform:scale(.98)}
+.tile .name{font-weight:600}
+.tile .st{font-size:13px;color:var(--muted)}
+.tile.on{background:var(--accent-bg);border-color:var(--accent)}
+.tile.on .st{color:var(--on);font-weight:500}
+.tile.busy{opacity:.6}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.seg button{border:0;background:transparent;color:var(--text);font:inherit;font-size:15px;padding:10px 4px;border-radius:9px;cursor:pointer}
+.seg button.sel{background:var(--card);box-shadow:0 0 0 1px var(--line);font-weight:600;color:var(--accent)}
+.state{font-size:14px;color:var(--muted);margin-top:10px}
+.small{font-size:13px;color:var(--muted)}
+details{margin-top:4px}
+summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 2px}
+.kv{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px solid var(--line)}
+.kv:last-child{border-bottom:0}
+.btn{display:inline-block;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:10px 14px;font:inherit;font-size:14px;cursor:pointer;text-decoration:none;margin:8px 8px 0 0}
+.btn.danger{color:#b91c1c}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Jacuzzi</h1>
+    <div class="conn"><span id="spaTime"></span><span class="dot" id="dot"></span><span id="connTxt">Se conectează</span></div>
+  </header>
+
+  <div class="banner" id="noPanel">Nu primesc date de la jacuzzi. Verifică legătura la pinul 5 și cablul RS485.</div>
+
+  <section class="card">
+    <div class="temp">
+      <div>
+        <div class="label">Temperatura apei</div>
+        <div class="big"><span id="temp">--</span><small>°C</small></div>
+      </div>
+      <span class="badge" id="heater">Încălzire oprită</span>
+    </div>
+    <div class="sub" id="ttt"></div>
+  </section>
+
+  <section class="card">
+    <div class="label">Temperatura dorită</div>
+    <div class="target">
+      <div class="tval" id="target">--</div>
+      <div class="stepper">
+        <button class="round" id="minus" aria-label="Scade temperatura">&minus;</button>
+        <button class="round" id="plus" aria-label="Crește temperatura">+</button>
+      </div>
+    </div>
+    <div class="sub" id="targetHint"></div>
+  </section>
+
+  <div class="grid">
+    <button class="tile" id="jet1"><span class="name">Jeturi 1</span><span class="st">Oprit</span></button>
+    <button class="tile" id="jet2"><span class="name">Jeturi 2</span><span class="st">Oprit</span></button>
+    <button class="tile" id="aux"><span class="name">Bule (blower)</span><span class="st">Pornire / oprire</span></button>
+    <button class="tile" id="light"><span class="name">Lumină</span><span class="st">Stinsă</span></button>
+  </div>
+
+  <section class="card">
+    <div class="label">Mod de funcționare</div>
+    <div class="seg" id="modes">
+      <button data-m="0">Standard</button>
+      <button data-m="1">Economic</button>
+      <button data-m="2">Somn</button>
+    </div>
+    <div class="state" id="state"></div>
+  </section>
+
+  <details>
+    <summary>Setări și informații</summary>
+    <section class="card">
+      <div class="kv"><span>Firmware</span><span id="fw">-</span></div>
+      <div class="kv"><span>Pornit de</span><span id="uptime">-</span></div>
+      <div class="kv"><span>Home Assistant (MQTT)</span><span id="mqtt">-</span></div>
+      <div class="kv"><span>Comenzi în așteptare</span><span id="queue">0</span></div>
+      <a class="btn" id="otaLink" href="#">Actualizare firmware</a>
+      <a class="btn" href="/raw">Pagina veche</a>
+      <button class="btn danger" id="wifiReset">Schimbă rețeaua WiFi</button>
+      <p class="small">„Schimbă rețeaua WiFi” șterge rețeaua salvată. Modulul pornește apoi hotspot-ul „Jacuzzi-Setup”, la care te conectezi de pe telefon ca să alegi rețeaua nouă.</p>
+    </section>
+  </details>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var S = {};
+  var desired = null, desiredTimer = null, lastMsg = 0, ws = null, pollTimer = null;
+  var MODE_NAMES = ['Standard','Economic','Somn'];
+  var STATE_RO = {'Standard':'Standard','Economy':'Economic','Sleep':'Somn','Circulation':'Circulație','Circulation in sleep':'Circulație (somn)','Cleaning':'Curățare','Std in Eco':'Standard temporar (din Economic)','Set Mode':'Se schimbă modul','Set Temperature':'Se setează temperatura','Temp Up':'Temperatură +','Temp Down':'Temperatură −','Standby?':'Standby','unknown':'Necunoscută','Panel select (pin5) not detected':'Pinul 5 nu e detectat'};
+
+  function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(function(){el.classList.remove('show');},2200); }
+
+  function api(path){
+    return fetch(path,{cache:'no-store'}).then(function(r){ return r.json(); }).catch(function(){ return {ok:false,msg:'offline'}; });
+  }
+
+  function fmtTemp(v){ var n=parseFloat(v); return (isNaN(n)||n<0)?null:n; }
+  function fmtUptime(s){ s=parseInt(s||0,10); var d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60); return (d?d+' z ':'')+h+' h '+m+' min'; }
+
+  function render(){
+    var t=fmtTemp(S.temp);
+    $('temp').textContent = t===null ? '--' : t.toFixed(1);
+    var heat = !!S.heater;
+    var hb=$('heater'); hb.textContent = heat ? 'Încălzește' : 'Încălzire oprită'; hb.className = 'badge'+(heat?' heat':'');
+    var ttt = parseInt(S.timeToTemp||0,10);
+    $('ttt').textContent = (heat && ttt>0) ? ('Gata în aproximativ '+(ttt>=60? Math.floor(ttt/60)+' h '+(ttt%60)+' min' : ttt+' min')) : '';
+
+    var tgt=fmtTemp(S.target);
+    if (desired!==null){
+      $('target').textContent = desired.toFixed(1)+' °C'; $('target').className='tval pending';
+      $('targetHint').textContent='Se trimite…';
+    } else if (tgt===null){
+      $('target').textContent='--'; $('target').className='tval';
+      $('targetHint').textContent='Necunoscută. Apasă + sau − o dată ca să o citesc din jacuzzi.';
+    } else {
+      $('target').textContent = tgt.toFixed(1)+' °C'; $('target').className='tval';
+      $('targetHint').textContent='';
+    }
+
+    setTile('jet1', S.pump1>0, S.pump1>0?'Pornite':'Oprite');
+    setTile('jet2', S.pump2>0, S.pump2>0?'Pornite':'Oprite');
+    setTile('light', !!S.light, S.light?'Aprinsă':'Stinsă');
+
+    var m = parseInt(S.mode,10);
+    var btns=$('modes').querySelectorAll('button');
+    for (var i=0;i<btns.length;i++){ btns[i].classList.toggle('sel', parseInt(btns[i].getAttribute('data-m'),10)===m); }
+    $('state').textContent = S.state ? ('Stare: '+(STATE_RO[S.state]||S.state)) : '';
+
+    $('noPanel').classList.toggle('show', S.panel===false);
+    $('spaTime').textContent = (S.time && S.time!=='--:--') ? S.time : '';
+    $('fw').textContent = S.fw || '-';
+    $('uptime').textContent = fmtUptime(S.uptime);
+    $('mqtt').textContent = S.mqtt ? 'Activ' : 'Dezactivat';
+    var q=parseInt(S.queue||0,10); $('queue').textContent=q;
+    var busy=q>0;
+    ['jet1','jet2','aux','light'].forEach(function(id){ $(id).classList.toggle('busy', busy); });
+  }
+
+  function setTile(id,on,txt){ var el=$(id); el.classList.toggle('on',on); el.querySelector('.st').textContent=txt; }
+
+  function onStatus(d){ S=d; lastMsg=Date.now(); setConn(true); render(); }
+
+  function setConn(live){ $('dot').className='dot'+(live?' live':''); $('connTxt').textContent= live?'Conectat':'Fără legătură'; }
+
+  function connectWs(){
+    try { ws = new WebSocket('ws://'+location.hostname+':81'); } catch(e){ startPoll(); return; }
+    ws.onmessage=function(ev){ try{ var msg=JSON.parse(ev.data); if(msg.type==='status') onStatus(msg.data); }catch(e){} };
+    ws.onopen=function(){ stopPoll(); };
+    ws.onclose=function(){ setConn(false); startPoll(); setTimeout(connectWs,4000); };
+    ws.onerror=function(){ try{ws.close();}catch(e){} };
+  }
+  function poll(){ api('/api/status').then(function(r){ if(r && r.data) onStatus(r.data); }); }
+  function startPoll(){ if(!pollTimer){ poll(); pollTimer=setInterval(poll,5000); } }
+  function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
+  setInterval(function(){ if(Date.now()-lastMsg>20000) setConn(false); },5000);
+
+  function cmd(a, label){
+    api('/api/cmd?a='+a).then(function(r){ toast(r.ok ? label : (r.msg==='busy'?'Se trimit încă comenzi, mai încearcă':'Comanda nu a mers')); });
+  }
+
+  function step(delta){
+    var tgt=fmtTemp(S.target);
+    if (tgt===null && desired===null){
+      api('/api/cmd?a=up').then(function(){ toast('Citesc temperatura setată…'); });
+      return;
+    }
+    var base = desired!==null ? desired : tgt;
+    desired = Math.min(40, Math.max(26, Math.round((base+delta)*2)/2));
+    render();
+    clearTimeout(desiredTimer);
+    desiredTimer=setTimeout(function(){
+      var v=desired;
+      api('/api/target?t='+v.toFixed(1)).then(function(r){
+        desired=null; render();
+        toast(r.ok ? ('Setez '+v.toFixed(1)+' °C') : (r.msg==='target unknown'?'Citesc temperatura setată, încearcă din nou':'Nu am putut seta temperatura'));
+      });
+    },1500);
+  }
+
+  $('plus').onclick=function(){ step(0.5); };
+  $('minus').onclick=function(){ step(-0.5); };
+  $('jet1').onclick=function(){ cmd('jet1','Jeturi 1'); };
+  $('jet2').onclick=function(){ cmd('jet2','Jeturi 2'); };
+  $('aux').onclick=function(){ cmd('aux','Bule'); };
+  $('light').onclick=function(){ cmd('light','Lumină'); };
+  var mb=$('modes').querySelectorAll('button');
+  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mod: '+MODE_NAMES[m]):'Nu am putut schimba modul'); }); }; }
+  $('otaLink').href='http://'+location.hostname+':8080/update';
+  $('wifiReset').onclick=function(){
+    if(!confirm('Ștergi rețeaua WiFi salvată? Modulul repornește în modul de configurare.')) return;
+    fetch('/api/wifireset',{method:'POST'}).then(function(){ toast('Repornesc. Conectează-te la „Jacuzzi-Setup”.'); });
+  };
+
+  render();
+  connectWs();
+})();
+</script>
+</body>
+</html>
