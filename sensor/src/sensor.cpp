@@ -26,6 +26,11 @@
 
 #define WDT_TIMEOUT 30
 
+// Generic ESP32 DevKit boards don't define the on-board LED; it is GPIO2 on most of them
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 2
+#endif
+
 #define FW_VERSION "1.0.0"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
