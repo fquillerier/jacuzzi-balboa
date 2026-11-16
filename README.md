@@ -47,7 +47,7 @@ Step-down OUT+ → pinul 5V al ESP32, OUT− → GND. Verifică cu multimetrul c
 
 ### Varianta simplă (din browser)
 
-1. Descarcă `jacuzzi-full-install.bin` de la ultima versiune din [Releases](../../releases) (sau din tabul Actions → ultimul build → artefactul `jacuzzi-firmware`).
+1. Deschide [Actions](../../actions), intră pe ultimul build cu bifă verde și descarcă artefactul `jacuzzi-firmware` (o arhivă zip). Dezarhivează-l: conține `jacuzzi-full-install.bin` (instalare completă) și `jacuzzi-update.bin` (actualizare prin WiFi). Artefactele se păstrează 90 de zile; pentru fișiere permanente, publică o versiune nouă cu un tag `v…` (de ex. `v1.0.0`), iar build-ul le atașează automat în [Releases](../../releases).
 2. Conectează ESP32 la calculator prin USB și deschide în Chrome sau Edge: https://espressif.github.io/esptool-js/
 3. Apasă **Connect**, alege portul ESP32.
 4. La **Flash Address** scrie `0x0`, alege fișierul `jacuzzi-full-install.bin`, apasă **Program**.
