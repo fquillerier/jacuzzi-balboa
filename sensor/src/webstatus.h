@@ -37,7 +37,7 @@ String getStatusJSON() {
   j += ", \"pump2\": " + String(pump2State);
   j += ", \"p1l\": " + String(pump1Lvl);
   j += ", \"p2l\": " + String(pump2Lvl);
-  j += ", \"mode\": \"" + String((int)tubMode.getCurrentState()) + "\"";
+  j += ", \"mode\": \"" + String(modeIdx) + "\"";
   j += ", \"state\": \"" + jsonEscape(state) + "\"";
   j += ", \"time\": \"" + jsonEscape(timeString) + "\"";
   j += ", \"timeToTemp\": " + String((int)ttt);
@@ -66,7 +66,7 @@ void handleRoot() {
 
 // The original minimal status page from the upstream project, kept for debugging
 void handleRawStatus() {
- webserver.send(200, "text/html", "<html><head><title>Spa Status</title></head><body><script>var wsurl = 'ws://' + window.location.hostname + ':81'; var socket = new WebSocket(wsurl); socket.onmessage = function (event) { console.log(event.data);  var msg = JSON.parse(event.data); document.getElementById('mode').innerHTML = msg.data.mode; document.getElementById('state').innerHTML = msg.data.state; document.getElementById('temp').innerHTML = msg.data.temp; document.getElementById('heater').innerHTML = msg.data.heater; document.getElementById('date').innerHTML = new Date(); }</script>Mode:&nbsp;<span id=\"mode\">"+(String)tubMode.getCurrentState()+"</span><br/>State:&nbsp;<span id=\"state\">"+state+"</span><br/>Temp:&nbsp;<span id=\"temp\">" + String(tubTemp,1) + "</span>C<br/>Heating:&nbsp;<span id=\"heater\">"+(heaterState ? "true" : "false")+"</span><br/>Last Update:&nbsp;<span id=\"date\"></span></body></html>");
+ webserver.send(200, "text/html", "<html><head><title>Spa Status</title></head><body><script>var wsurl = 'ws://' + window.location.hostname + ':81'; var socket = new WebSocket(wsurl); socket.onmessage = function (event) { console.log(event.data);  var msg = JSON.parse(event.data); document.getElementById('mode').innerHTML = msg.data.mode; document.getElementById('state').innerHTML = msg.data.state; document.getElementById('temp').innerHTML = msg.data.temp; document.getElementById('heater').innerHTML = msg.data.heater; document.getElementById('date').innerHTML = new Date(); }</script>Mode:&nbsp;<span id=\"mode\">"+String(modeIdx)+"</span><br/>State:&nbsp;<span id=\"state\">"+state+"</span><br/>Temp:&nbsp;<span id=\"temp\">" + String(tubTemp,1) + "</span>C<br/>Heating:&nbsp;<span id=\"heater\">"+(heaterState ? "true" : "false")+"</span><br/>Last Update:&nbsp;<span id=\"date\"></span></body></html>");
 }
 
 // Raw command passthrough (hex string in the request body) - for debugging only
@@ -170,7 +170,11 @@ void handleApiMode() {
     sendApiResult(false, "bad mode");
     return;
   }
-  int currentIndex = tubMode.getCurrentState();
+  int currentIndex = modeIdx;
+  if (currentIndex < 0) {
+    sendApiResult(false, "mode unknown");
+    return;
+  }
   if (currentIndex == m) {
     sendApiResult(true, "no change");
     return;

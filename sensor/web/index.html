@@ -369,7 +369,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   $('minus').onclick=function(){ step(-0.5); };
   ['jet1','jet2','aux','light'].forEach(function(k){ $(k).onclick=function(){ cmd(k, featName(k)); }; });
   var mb=$('modes').querySelectorAll('button');
-  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mod: '+MODE_NAMES[m]):(r.msg==='nopanel'?'Pinul 5 nu e conectat, comenzile sunt oprite':'Nu am putut schimba modul')); }); }; }
+  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mod: '+MODE_NAMES[m]):r.msg==='mode unknown'?'Modul curent nu e cunoscut încă, mai încearcă peste câteva secunde':(r.msg==='nopanel'?'Pinul 5 nu e conectat, comenzile sunt oprite':'Nu am putut schimba modul')); }); }; }
   $('otaLink').href='http://'+location.hostname+':8080/update';
   $('wifiReset').onclick=function(){
     if(!confirm('Ștergi rețeaua WiFi salvată? Modulul repornește în modul de configurare.')) return;

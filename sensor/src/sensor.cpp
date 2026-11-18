@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.6.0"
+#define FW_VERSION "1.6.1"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -198,12 +198,16 @@ uint32_t pin5Rate = 0;                // pulses per second, measured every 5 s
 bool sniffOn = false;                 // log button codes sent by the physical panel
 String bootReason = "";
 uint32_t bootCount = 0;
+// Current mode (0 Standard, 1 Economy, 2 Sleep, -1 not known yet). Kept here because the Home Assistant
+// select only remembers its state while MQTT is connected, so without MQTT the mode was always -1.
+int modeIdx = -1;
 int pump1Lvl = 0;                     // 0 off, 1 low, 2 high, as reported by the controller
 int pump2Lvl = 0;
 uint32_t badStartBytes = 0;           // serial noise counters, summarised in the log once a minute
 uint32_t readTimeouts = 0;
 
 bool setTargetTemperature(float temperatureFloat);
+void setModeIdx(int m);
 void setOption(int currentIndex, int targetIndex, int options, String command);
 String cmdName(const String& hex);
 void dropHead();
@@ -269,6 +273,11 @@ void attachPanelInterrupt() {
 }
 
 // ---- helpers for the debug log, command queue and watchdogs ----
+
+void setModeIdx(int m) {
+    modeIdx = m;
+    tubMode.setState(m);
+}
 
 String cmdName(const String& hex) {
     String h = hex;
@@ -496,7 +505,8 @@ void onPumpSwitchStateChanged(int8_t index, HASelect* sender) {
 
 void onModeSwitchStateChanged(int8_t index, HASelect* sender) {
     Serial.printf("Mode Switch changed - %u\n", index);
-    int currentIndex = sender->getCurrentState();
+    int currentIndex = modeIdx;
+    if (currentIndex < 0) return;  // unknown: can't count the presses
     int options = 3;
     sendBuffer.enqueue(COMMAND_CHANGE_MODE);
     setOption(currentIndex, index, options, COMMAND_DOWN);
@@ -1075,24 +1085,24 @@ void handleMessage(size_t len, uint8_t buf[]) {
                 String s = result.substring(17, 18);
                 if (s == "4") {
                     state = "Sleep";
-                    tubMode.setState(MODE_IDX_SLP);
+                    setModeIdx(MODE_IDX_SLP);
                 } else if (s == "9") {
                     state = "Circulation";
-                    tubMode.setState(MODE_IDX_STD);  // TODO: confirm
+                    setModeIdx(MODE_IDX_STD);  // TODO: confirm
                 } else if (s == "1") {
                     state = "Standard";
-                    tubMode.setState(MODE_IDX_STD);
+                    setModeIdx(MODE_IDX_STD);
                 } else if (s == "2") {
                     state = "Economy";
-                    tubMode.setState(MODE_IDX_ECO);
+                    setModeIdx(MODE_IDX_ECO);
                 } else if (s == "a") {
                     state = "Cleaning";  // TODO: can't tell our actual mode here - could be any of the 3 I think
                 } else if (s == "c") {
                     state = "Circulation in sleep";
-                    tubMode.setState(MODE_IDX_SLP);
+                    setModeIdx(MODE_IDX_SLP);
                 } else if (s == "b" || s == "3") {
                     state = "Std in Eco";  // Was in eco, Swap to STD for 1 hour only
-                    tubMode.setState(MODE_IDX_STD);
+                    setModeIdx(MODE_IDX_STD);
                 } else {
                     state = "Unknown " + s;
                 }
@@ -1135,8 +1145,10 @@ void handleMessage(size_t len, uint8_t buf[]) {
                     telnetSend("CMD: " + cmd);
                 }
                 if (!lastRaw3.equals(cmd)) {
-                    // Controller accepted command
-                    if(commandPending && !sendBuffer.isEmpty()) {
+                    // Controller accepted our command: it echoes the button code. Going back to all zeros is
+                    // only the release of the previous press, so it does not count (counting it made the
+                    // next command look accepted when it was actually lost).
+                    if(commandPending && !sendBuffer.isEmpty() && cmd != "0000000000") {
                         String h = sendBuffer.getHead();
                         logAdd('T', "Acceptată " + cmdName(h) + " (" + String(headTries) + " trimiteri), răspuns cmd=" + cmd);
                         dropHead();
@@ -1185,7 +1197,7 @@ void handleMessage(size_t len, uint8_t buf[]) {
                 if(heaterState) {
                     hvac.setMode(HAHVAC::HeatMode);
                 }
-                else if(tubMode.getCurrentState() == MODE_IDX_STD) {
+                else if(modeIdx == MODE_IDX_STD) {
                     hvac.setMode(HAHVAC::AutoMode);                    
                 }
                 else  {
