@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.5.0"
+#define FW_VERSION "1.5.1"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -193,6 +193,8 @@ unsigned long headSince = 0;          // when the current first command started 
 uint16_t headTries = 0;               // how many times it was sent
 unsigned long lastWebServe = 0;
 volatile uint32_t pin5Edges = 0;      // panel-select pulses, counted by the interrupt
+volatile bool rxFlushReq = false;     // set by the interrupt, the RX buffer is cleared in loop()
+uint32_t pin5Rate = 0;                // pulses per second, measured every 5 s
 bool sniffOn = false;                 // log button codes sent by the physical panel
 String bootReason = "";
 uint32_t bootCount = 0;
@@ -237,10 +239,13 @@ void clearRXbuffer(void) {
 
 // Triggered when pin5 falling - ie our panel is selected
 // clears serial receive buffer
+// Kept tiny on purpose: it used to call uart_flush() here, which takes a lock and is far too slow for an
+// interrupt. With a fast or noisy pin 5 signal the interrupts piled up and the interrupt watchdog
+// restarted the ESP32 every few seconds. The buffer is now cleared in loop() as soon as it sees the flag.
 void IRAM_ATTR panelSelected() {
     msgStartTime = micros();
     pin5Edges++;
-    clearRXbuffer();
+    rxFlushReq = true;
 }
 
 /**
@@ -402,6 +407,14 @@ void watchdogTick() {
         p5Check = now;
         uint32_t e = pin5Edges;
         pin5Edges = 0;
+        uint32_t rate = e / 5;
+        static unsigned long rateLogAt = 0;
+        bool big = pin5Rate == 0 ? rate > 0 : (rate > pin5Rate * 3 / 2 || rate < pin5Rate * 2 / 3);
+        if (rate > 0 && (rateLogAt == 0 || (big && now - rateLogAt > 60000))) {
+            rateLogAt = now;
+            logAdd(rate > 20000 ? 'E' : 'S', "Pin 5: " + String(rate) + " impulsuri/s" + (rate > 20000 ? " (prea multe, semnal cu zgomot?)" : ""));
+        }
+        pin5Rate = rate;
         if (panelDetected) {
             if (e == 0 && !p5Lost) {
                 p5Lost = true;
@@ -898,6 +911,11 @@ void readSerial(bool panelSelect) {
     }
 }
 void loop() {
+    if (rxFlushReq) {  // our turn just started: drop whatever was meant for the other panels
+        rxFlushReq = false;
+        clearRXbuffer();
+        snLen = 0;
+    }
     bool panelSelect = (GPIO.in >> PIN_5_PIN_DEF) & 0x1;  // LOW when we are meant to read data
     readSerial(panelSelect);
     commandQueueSize.setValue((u_int8_t) sendBuffer.itemCount());

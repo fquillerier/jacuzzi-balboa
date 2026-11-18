@@ -47,6 +47,7 @@ String getStatusJSON() {
   j += ", \"fw\": \"" FW_VERSION "\"";
   j += ", \"boot\": \"" + jsonEscape(bootReason) + "\"";
   j += ", \"boots\": " + String(bootCount);
+  j += ", \"p5\": " + String(pin5Rate);
   j += ", \"sniff\": " + String(sniffOn ? "true" : "false");
   j += " } }";
   return j;

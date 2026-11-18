@@ -339,7 +339,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   };
 
   // ---- debug log ----
-  var LG={seq:0, lines:[], paused:false, timer:null};
+  var LG={seq:0, lines:[], paused:false, timer:null, busy:false};
   function pad(n){ return (n<10?'0':'')+n; }
   function clock(d){ return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
   function renderLog(){
@@ -359,8 +359,11 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     if(atBottom) box.scrollTop=box.scrollHeight;
   }
   function loadLog(){
-    if(LG.paused || !$('logBox').open) return;
-    api('/api/log?since='+LG.seq).then(function(r){
+    if(LG.paused || !$('logBox').open || LG.busy) return;
+    LG.busy=true;  // one request at a time, otherwise slow answers added the same lines several times
+    var ctl=window.AbortController?new AbortController():null, to=setTimeout(function(){ if(ctl) ctl.abort(); },6000);
+    fetch('/api/log?since='+LG.seq,{cache:'no-store',signal:ctl?ctl.signal:undefined}).then(function(x){ return x.json(); }).catch(function(){ return null; }).then(function(r){
+      clearTimeout(to); LG.busy=false;
       if(!r || !r.lines) return;
       if(r.seq<LG.seq){ LG.seq=0; LG.lines=[]; }  // module restarted
       var base=Date.now()-r.now, today=new Date().toDateString();
@@ -369,7 +372,8 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
         if(ep){ var d=new Date(ep*1000); when=(d.toDateString()===today?'':pad(d.getDate())+'.'+pad(d.getMonth()+1)+' ')+clock(d); }
         else if(bt===r.boot){ when=clock(new Date(base+ms)); }
         else { var s=Math.floor(ms/1000); when='#'+bt+' +'+pad(Math.floor(s/3600))+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60); }
-        LG.lines.push({seq:a[0], when:when, ty:a[4], text:a[5]}); LG.seq=Math.max(LG.seq,a[0]);
+        if(a[0]<=LG.seq) return;
+        LG.lines.push({seq:a[0], when:when, ty:a[4], text:a[5]}); LG.seq=a[0];
       });
       if(LG.lines.length>400) LG.lines=LG.lines.slice(-400);
       if(r.lines.length) renderLog();
@@ -385,30 +389,32 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   $('lf').onchange=renderLog;
   $('lPause').onclick=function(){ LG.paused=!LG.paused; this.textContent=LG.paused?'Continuă':'Pauză'; if(!LG.paused) loadLog(); };
   $('lClear').onclick=function(){ if(!confirm('Golești jurnalul?')) return; post('/api/log/clear').then(function(){ LG.lines=[]; renderLog(); loadLog(); }); };
-  function logText(){
+  function logText(St){
     if(!LG.lines.length) return '';
+    var S=St||{};
     var head=['Jurnal '+CFG.title+' · '+new Date().toLocaleString('ro-RO'),
       'Firmware '+(S.fw||'-')+' · pornit de '+fmtUptime(S.uptime)+' · ultima repornire: '+(S.boot||'-')+' · reporniri: '+(S.boots||'-'),
-      'Pin 5: '+(S.panel?'detectat':'nedetectat')+' · coadă: '+(S.queue||0)+' · stare: '+(S.state||'-')+' · apă '+(S.temp||'-')+' °C',
+      'Pin 5: '+(S.panel?'detectat':'nedetectat')+(S.p5!==undefined?' ('+S.p5+' impulsuri/s)':'')+' · coadă: '+(S.queue||0)+' · stare: '+(S.state||'-')+' · apă '+(S.temp||'-')+' °C',
       ''];
     return head.concat(LG.lines.map(function(l){ return l.when+' '+l.ty+' '+l.text; })).join('\n')+'\n';
   }
-  $('lExport').onclick=function(){
-    var txt=logText();
+  function fresh(){ return api('/api/status').then(function(r){ return (r&&r.data)||S; }); }
+  $('lExport').onclick=function(){ fresh().then(function(St){
+    var txt=logText(St);
     if(!txt){ toast('Jurnalul e gol'); return; }
     var d=new Date(), name='jurnal-jacuzzi-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.txt';
     var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'})); a.download=name;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(a.href); },5000);
     toast('Salvat '+name);
-  };
-  $('lCopy').onclick=function(){
-    var txt=logText();
+  }); };
+  $('lCopy').onclick=function(){ (function(St){  // stays synchronous: phones only allow copying right after the tap
+    var txt=logText(St);
     if(!txt){ toast('Jurnalul e gol'); return; }
     var done=function(){ toast('Copiat'); };
     if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(txt).then(done,function(){ fallbackCopy(txt); }); }
     else fallbackCopy(txt);
-  };
+  })(S); };
   function fallbackCopy(txt){
     var ta=document.createElement('textarea'); ta.value=txt; ta.setAttribute('readonly',''); ta.style.position='absolute'; ta.style.left='-9999px';
     document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0,txt.length);
