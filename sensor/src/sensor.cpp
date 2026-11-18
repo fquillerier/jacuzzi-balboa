@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.4.1"
+#define FW_VERSION "1.5.0"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -291,6 +291,7 @@ int queueClear() {
 void restartWith(const String& why) {
     prefs.putString("rstWhy", why);
     logAdd('S', "Repornesc: " + why);
+    logSaveFlash();
     delay(300);
     ESP.restart();
 }
@@ -587,6 +588,7 @@ void setup() {
     if (why.length() > 0) prefs.remove("rstWhy");
     esp_reset_reason_t rr = esp_reset_reason();
     bootReason = (rr == ESP_RST_SW && why.length() > 0) ? why : resetReasonText(rr);
+    logBegin(bootCount, rr == ESP_RST_POWERON || rr == ESP_RST_BROWNOUT);
     logAdd('S', "Pornire #" + String(bootCount) + ", motiv: " + bootReason + ", firmware " FW_VERSION);
     prefs.getString("mqttHost", "").toCharArray(mqttHost, sizeof(mqttHost));
     prefs.getString("mqttPort", "1883").toCharArray(mqttPort, sizeof(mqttPort));
@@ -631,6 +633,7 @@ void setup() {
     mqttEnabled = strlen(mqttHost) > 0;
 
     logAdd('S', "WiFi conectat, IP " + WiFi.localIP().toString());
+    clockBegin();
     setPixel(STATUS_WIFI);
 
     if (MDNS.begin(MDNS_NAME)) {
@@ -662,6 +665,8 @@ void setup() {
         })
         .onEnd([]() {
             prefs.putString("rstWhy", "update firmware");
+            logAdd('S', "Update firmware terminat, repornesc");
+            logSaveFlash();
             attachPanelInterrupt();
         })
         .onError([](ota_error_t error) {
@@ -693,6 +698,7 @@ void setup() {
     webserver.on("/api/config", HTTP_POST, handleApiConfigPost);
     webserver.on("/api/history", handleApiHistory);
     webserver.on("/api/log", handleApiLog);
+    webserver.on("/api/time", HTTP_POST, handleApiTime);
     webserver.on("/api/log/clear", HTTP_POST, handleApiLogClear);
     webserver.on("/api/log/note", HTTP_POST, handleApiLogNote);
     webserver.on("/api/log/sniff", HTTP_POST, handleApiSniff);
@@ -935,6 +941,7 @@ void loop() {
 
     historyTick();
     watchdogTick();
+    logTick();
 
 #ifdef ESP32
     esp_task_wdt_reset();

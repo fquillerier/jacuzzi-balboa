@@ -207,7 +207,8 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
       <button class="btn sm" id="lCopy">Copiază</button>
       <button class="btn sm" id="lExport">Exportă fișier</button>
       <button class="btn sm" id="lClear">Golește</button>
-      <div class="small" style="margin-top:8px">R primit · T trimis · P panou fizic · W din pagină · S sistem · E eroare · M notă</div>
+      <div class="small" style="margin-top:8px">Jurnalul rămâne după repornire. După o pană de curent rămân ultimele aproximativ 40 de linii.</div>
+      <div class="small" style="margin-top:4px">R primit · T trimis · P panou fizic · W din pagină · S sistem · E eroare · M notă</div>
       <div class="log" id="log"></div>
     </section>
   </details>
@@ -359,8 +360,14 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     api('/api/log?since='+LG.seq).then(function(r){
       if(!r || !r.lines) return;
       if(r.seq<LG.seq){ LG.seq=0; LG.lines=[]; }  // module restarted
-      var base=Date.now()-r.now;
-      r.lines.forEach(function(a){ LG.lines.push({seq:a[0], when:clock(new Date(base+a[1])), ty:a[2], text:a[3]}); LG.seq=Math.max(LG.seq,a[0]); });
+      var base=Date.now()-r.now, today=new Date().toDateString();
+      r.lines.forEach(function(a){
+        var ms=a[1], ep=a[2], bt=a[3], when;
+        if(ep){ var d=new Date(ep*1000); when=(d.toDateString()===today?'':pad(d.getDate())+'.'+pad(d.getMonth()+1)+' ')+clock(d); }
+        else if(bt===r.boot){ when=clock(new Date(base+ms)); }
+        else { var s=Math.floor(ms/1000); when='#'+bt+' +'+pad(Math.floor(s/3600))+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60); }
+        LG.lines.push({seq:a[0], when:when, ty:a[4], text:a[5]}); LG.seq=Math.max(LG.seq,a[0]);
+      });
       if(LG.lines.length>400) LG.lines=LG.lines.slice(-400);
       if(r.lines.length) renderLog();
     });
@@ -611,6 +618,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   setInterval(loadHistory, 300000);
 
   render();
+  post('/api/time?t='+Math.floor(Date.now()/1000));  // used only if the module has no internet time
   loadCfg().then(function(){ loadHistory(); loadWeather(); });
   connectWs();
 })();
