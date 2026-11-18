@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <WiFiAP.h>
 #include <esp_task_wdt.h>
+#include <esp_system.h>
 #include <driver/uart.h>
 #else
 #include <ESP8266WebServer.h>
@@ -31,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.3.0"
+#define FW_VERSION "1.4.0"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -180,10 +181,35 @@ int msgLength = 0;
 boolean panelDetected = false;
 const unsigned long readBytesTimeout = 2500; // Timeout in microseconds (2.5 ms)
 
+// ---- command queue safety and watchdogs ----
+// A command the controller never acknowledges used to be resent forever, and while the queue was not
+// empty the page was not served at all, so the module looked frozen. Now:
+#define CMD_TIMEOUT_MS 10000UL        // drop the queue if the first command gets no answer in 10 s
+#define WEB_SLICE_MS 1000UL           // serve the page at least once a second, even while sending
+#define WEB_WATCHDOG_MS 60000UL       // restart if the page was not served for 60 s
+#define WIFI_WATCHDOG_MS 300000UL     // restart if WiFi stays down for 5 minutes
+#define SINGLE_CMD_QUEUE_MAX 5        // page buttons are refused while this many commands wait
+unsigned long headSince = 0;          // when the current first command started waiting
+uint16_t headTries = 0;               // how many times it was sent
+unsigned long lastWebServe = 0;
+volatile uint32_t pin5Edges = 0;      // panel-select pulses, counted by the interrupt
+bool sniffOn = false;                 // log button codes sent by the physical panel
+String bootReason = "";
+uint32_t bootCount = 0;
+int pump1Lvl = 0;                     // 0 off, 1 low, 2 high, as reported by the controller
+int pump2Lvl = 0;
+uint32_t badStartBytes = 0;           // serial noise counters, summarised in the log once a minute
+uint32_t readTimeouts = 0;
+
 bool setTargetTemperature(float temperatureFloat);
 void setOption(int currentIndex, int targetIndex, int options, String command);
+String cmdName(const String& hex);
+void dropHead();
+int queueClear();
+void restartWith(const String& why);
 
 #include "telnet.h"
+#include "weblog.h"
 #include "webui.h"
 #include "webstatus.h"
 
@@ -193,7 +219,10 @@ void handleMessage(size_t len, uint8_t buf[]);
 String HexString2TimeString(String hexstring);
 String HexString2ASCIIString(String hexstring);
 void notePanelMsg(String hex);
+String cleanAscii(String hex);
 void sendCommand();
+void sniffRead();
+void notePanelButton(const uint8_t* p, const char* where);
 
 void clearRXbuffer(void) {
         // clear the rx buffer
@@ -210,6 +239,7 @@ void clearRXbuffer(void) {
 // clears serial receive buffer
 void IRAM_ATTR panelSelected() {
     msgStartTime = micros();
+    pin5Edges++;
     clearRXbuffer();
 }
 
@@ -219,6 +249,180 @@ void IRAM_ATTR panelSelected() {
  */
 void attachPanelInterrupt() {
     attachInterrupt(digitalPinToInterrupt(PIN_5_PIN_DEF), panelSelected, FALLING);
+}
+
+// ---- helpers for the debug log, command queue and watchdogs ----
+
+String cmdName(const String& hex) {
+    String h = hex;
+    h.toLowerCase();
+    if (h == COMMAND_UP) return "Temp +";
+    if (h == COMMAND_DOWN) return "Temp -";
+    if (h == COMMAND_TIME) return "Ora";
+    if (h == COMMAND_CHANGE_MODE) return "Mod";
+    if (h == COMMAND_AUX) return "Bule";
+    if (h == COMMAND_JET1) return "Jet 1";
+    if (h == COMMAND_JET2) return "Jet 2";
+    if (h == COMMAND_EMPTY) return "Gol";
+    if (h == COMMAND_LIGHT) return "Lumina";
+    return "cod necunoscut";
+}
+
+// Remove the first queued command (sent and accepted, or given up)
+void dropHead() {
+    if (!sendBuffer.isEmpty()) sendBuffer.dequeue();
+    commandPending = false;
+    headSince = 0;
+    headTries = 0;
+}
+
+int queueClear() {
+    int n = 0;
+    while (!sendBuffer.isEmpty()) {
+        sendBuffer.dequeue();
+        n++;
+    }
+    commandPending = false;
+    headSince = 0;
+    headTries = 0;
+    return n;
+}
+
+void restartWith(const String& why) {
+    prefs.putString("rstWhy", why);
+    logAdd('S', "Repornesc: " + why);
+    delay(300);
+    ESP.restart();
+}
+
+String resetReasonText(esp_reset_reason_t r) {
+    switch (r) {
+        case ESP_RST_POWERON: return "pornire alimentare";
+        case ESP_RST_EXT: return "reset extern";
+        case ESP_RST_SW: return "repornire software";
+        case ESP_RST_PANIC: return "eroare program (crash)";
+        case ESP_RST_INT_WDT: return "watchdog (întreruperi blocate)";
+        case ESP_RST_TASK_WDT: return "watchdog (program blocat)";
+        case ESP_RST_WDT: return "watchdog";
+        case ESP_RST_DEEPSLEEP: return "trezire din somn";
+        case ESP_RST_BROWNOUT: return "tensiune prea mică";
+        default: return "necunoscut";
+    }
+}
+
+// Button frames look like fb 06 aa bb cc 00 XX ~XX crc. XX = 0 is "no button".
+String snLast = "";
+unsigned long snLastMs = 0;
+void notePanelButton(const uint8_t* p, const char* where) {
+    if (p[0] != 0xFB || p[1] != 0x06) return;
+    if ((uint8_t)(p[6] + p[7]) != 0xFF) return;
+    if (p[6] == 0) return;
+    String h = "";
+    for (int i = 0; i < 9; i++) {
+        if (p[i] < 0x10) h += '0';
+        h += String(p[i], HEX);
+    }
+    // a held button repeats the same frame many times; log it once
+    if (h == snLast && millis() - snLastMs < 1500) {
+        snLastMs = millis();
+        return;
+    }
+    snLast = h;
+    snLastMs = millis();
+    logAdd('P', "Panou fizic: " + cmdName(h) + " " + h + " (" + where + ")");
+}
+
+// While another panel has its turn on the bus, scan the bytes for its button frames
+uint8_t snBuf[9];
+uint8_t snLen = 0;
+void sniffRead() {
+    int guard = 64;
+    while (tub.available() > 0 && guard-- > 0) {
+        uint8_t b = tub.read();
+        if (snLen == 0) {
+            if (b == 0xFB) snBuf[snLen++] = b;
+            continue;
+        }
+        snBuf[snLen++] = b;
+        if (snLen == 2 && b != 0x06) {
+            snLen = (b == 0xFB) ? 1 : 0;
+            continue;
+        }
+        if (snLen == 9) {
+            snLen = 0;
+            notePanelButton(snBuf, "magistrală");
+        }
+    }
+}
+
+void watchdogTick() {
+    unsigned long now = millis();
+
+    // A command that never gets accepted: drop the whole queue (the rest depends on it, e.g. temperature steps)
+    if (!sendBuffer.isEmpty()) {
+        if (headSince == 0) {
+            headSince = now;
+        } else if (now - headSince > CMD_TIMEOUT_MS) {
+            String h = sendBuffer.getHead();
+            String why = headTries == 0 ? " (nu a venit rândul nostru, verifică pinul 5)" : " (jacuzzi-ul nu a răspuns)";
+            int n = queueClear();
+            logAdd('E', "Fără răspuns la " + cmdName(h) + " " + h + " după " + String(headTries) + " trimiteri" + why +
+                            ", am golit coada (" + String(n) + ")");
+        }
+    }
+
+    // Page not served for a long time: restart
+    if (now - lastWebServe > WEB_WATCHDOG_MS) {
+        restartWith("watchdog: pagina nu a răspuns 60 s");
+    }
+
+    static unsigned long lastSlow = 0;
+    if (now - lastSlow < 1000) return;
+    lastSlow = now;
+
+    // WiFi down for 5 minutes: restart (the ESP32 also retries on its own meanwhile)
+    static unsigned long wifiLostAt = 0;
+    if (WiFi.status() != WL_CONNECTED) {
+        if (wifiLostAt == 0) {
+            wifiLostAt = now ? now : 1;
+            logAdd('E', "WiFi deconectat");
+        } else if (now - wifiLostAt > WIFI_WATCHDOG_MS) {
+            restartWith("watchdog: WiFi picat 5 minute");
+        }
+    } else if (wifiLostAt) {
+        logAdd('S', "WiFi reconectat după " + String((now - wifiLostAt) / 1000) + " s");
+        wifiLostAt = 0;
+    }
+
+    // Pin 5 pulses, checked every 5 s
+    static unsigned long p5Check = 0;
+    static bool p5Lost = false;
+    if (now - p5Check >= 5000) {
+        p5Check = now;
+        uint32_t e = pin5Edges;
+        pin5Edges = 0;
+        if (panelDetected) {
+            if (e == 0 && !p5Lost) {
+                p5Lost = true;
+                logAdd('E', "Pin 5: semnalul lipsește");
+            } else if (e > 0 && p5Lost) {
+                p5Lost = false;
+                logAdd('S', "Pin 5: semnal revenit");
+            }
+        }
+    }
+
+    // Serial noise summary, once a minute
+    static unsigned long noiseCheck = 0;
+    if (now - noiseCheck >= 60000) {
+        noiseCheck = now;
+        if (badStartBytes || readTimeouts) {
+            logAdd('E', "RS485 ultimul minut: " + String(badStartBytes) + " octeți necunoscuți, " + String(readTimeouts) +
+                            " mesaje incomplete");
+            badStartBytes = 0;
+            readTimeouts = 0;
+        }
+    }
 }
 
 void sendCommand(String command, int count) {
@@ -375,6 +579,15 @@ void setup() {
 
     // Load optional MQTT settings saved by the setup page
     prefs.begin("jacuzzi", false);
+
+    // Restart bookkeeping: count restarts and remember why the last one happened
+    bootCount = prefs.getUInt("boots", 0) + 1;
+    prefs.putUInt("boots", bootCount);
+    String why = prefs.getString("rstWhy", "");
+    if (why.length() > 0) prefs.remove("rstWhy");
+    esp_reset_reason_t rr = esp_reset_reason();
+    bootReason = (rr == ESP_RST_SW && why.length() > 0) ? why : resetReasonText(rr);
+    logAdd('S', "Pornire #" + String(bootCount) + ", motiv: " + bootReason + ", firmware " FW_VERSION);
     prefs.getString("mqttHost", "").toCharArray(mqttHost, sizeof(mqttHost));
     prefs.getString("mqttPort", "1883").toCharArray(mqttPort, sizeof(mqttPort));
     prefs.getString("mqttUser", "").toCharArray(mqttUser, sizeof(mqttUser));
@@ -417,8 +630,7 @@ void setup() {
     }
     mqttEnabled = strlen(mqttHost) > 0;
 
-    Serial.print(F("Connected with IP: "));
-    Serial.println(WiFi.localIP());
+    logAdd('S', "WiFi conectat, IP " + WiFi.localIP().toString());
     setPixel(STATUS_WIFI);
 
     if (MDNS.begin(MDNS_NAME)) {
@@ -445,11 +657,11 @@ void setup() {
 
     webota
         .onStart([]() {
-            Serial.println("Start updating");
+            logAdd('S', "Update firmware început");
             detachInterrupt(digitalPinToInterrupt(PIN_5_PIN_DEF));
         })
         .onEnd([]() {
-            Serial.println("\nOTA End");
+            prefs.putString("rstWhy", "update firmware");
             attachPanelInterrupt();
         })
         .onError([](ota_error_t error) {
@@ -480,6 +692,13 @@ void setup() {
     webserver.on("/api/config", HTTP_GET, handleApiConfigGet);
     webserver.on("/api/config", HTTP_POST, handleApiConfigPost);
     webserver.on("/api/history", handleApiHistory);
+    webserver.on("/api/log", handleApiLog);
+    webserver.on("/api/log/clear", HTTP_POST, handleApiLogClear);
+    webserver.on("/api/log/note", HTTP_POST, handleApiLogNote);
+    webserver.on("/api/log/sniff", HTTP_POST, handleApiSniff);
+    webserver.on("/api/queue/clear", HTTP_POST, handleApiQueueClear);
+    webserver.on("/api/restart", HTTP_POST, handleApiRestart);
+    webserver.on("/api/sendhex", HTTP_POST, handleApiSendHex);
     webserver.on("/manifest.webmanifest", handleManifest);
     webserver.on("/icon-180.png", handleIcon180);
     webserver.on("/icon-192.png", handleIcon192);
@@ -606,6 +825,7 @@ void setup() {
     esp_task_wdt_init(WDT_TIMEOUT, true);  // enable panic so ESP32 restarts
     esp_task_wdt_add(NULL);                // add current thread to WDT watch
 #endif
+    lastWebServe = millis();
     Serial.println("End of setup");
     digitalWrite(LED_BUILTIN, LOW);
 }
@@ -634,16 +854,15 @@ int waitforGLBytes() {
             msgLength = 9;
             break;
         default:
-            Serial.print("Unknown message start Byte: ");
-            int unknownByte = tub.read();
-            Serial.println(unknownByte, HEX);
+            tub.read();
+            badStartBytes++;
             return 0;
     }
     // we'll wait here for up to 2.5ms until the expected number of bytes are available
     unsigned long startTime = micros();
     while (tub.available() < msgLength) {
         if (micros() - startTime >= readBytesTimeout) {
-            Serial.printf("Timeout: %u bytes not available in 2.5ms\n", msgLength);
+            readTimeouts++;
             return 0;
         }
     }
@@ -661,6 +880,9 @@ void readSerial(bool panelSelect) {
         }
     }
     else {
+        if (sniffOn && panelSelect == HIGH) {
+            sniffRead();  // another panel's turn: look for its button codes
+        }
         if(panelDetected) {
             setPixel(STATUS_WAITING_DATA);
         }
@@ -677,6 +899,7 @@ void loop() {
     if (panelSelect == HIGH || !panelDetected) {  // Controller talking to other topside panels - we are in effect idle
 
         if(panelSelect == HIGH) {
+            if (!panelDetected) logAdd('S', "Pin 5 detectat, jacuzzi-ul ne dă rândul la comenzi");
             panelDetected = true;
         }
         else {
@@ -688,9 +911,10 @@ void loop() {
     
         telnetLoop();
 
-        if (sendBuffer.isEmpty() || !panelDetected) {  // Only handle status is we aren't trying to send commands, webserver and websocket
-                                     // can both block for a long time
-
+        // The webserver and websocket can block for a while, so while commands wait they only get a short
+        // turn once a second instead of never (never made the page unreachable when a command got stuck)
+        if (sendBuffer.isEmpty() || !panelDetected || (millis() - lastWebServe >= WEB_SLICE_MS)) {
+            lastWebServe = millis();
             webserver.handleClient();
             webSocket.loop();
 
@@ -710,6 +934,7 @@ void loop() {
     }
 
     historyTick();
+    watchdogTick();
 
 #ifdef ESP32
     esp_task_wdt_reset();
@@ -740,6 +965,9 @@ void handleMessage(size_t len, uint8_t buf[]) {
         if (result.substring(10, 12) == "43" || result.substring(10, 12) == "46" || result.substring(10, 12) == "2d") {
             tubpowerCalc = 0;
             String pump = result.substring(13, 14);
+            int pumpBits = (int)strtol(pump.c_str(), NULL, 16);
+            pump1Lvl = pumpBits & 0x3;
+            pump2Lvl = (pumpBits >> 2) & 0x3;
 
             if (pump == "0") {  // Pump 1 Off - Pump 2 Off - 0b0000
                 pump1State = 0;
@@ -873,10 +1101,10 @@ void handleMessage(size_t len, uint8_t buf[]) {
                 }
                 if (!lastRaw3.equals(cmd)) {
                     // Controller accepted command
-                    if(commandPending) {
-                        commandPending = false;
-                        sendBuffer.dequeue();
-                        Serial.printf("YAY: command response : %u\n", timeSinceMsgStart);
+                    if(commandPending && !sendBuffer.isEmpty()) {
+                        String h = sendBuffer.getHead();
+                        logAdd('T', "Acceptată " + cmdName(h) + " (" + String(headTries) + " trimiteri), răspuns cmd=" + cmd);
+                        dropHead();
                         timeSinceMsgStartSensor.setValue((int) timeSinceMsgStart);
                     }
                     lastRaw3 = cmd;
@@ -930,10 +1158,21 @@ void handleMessage(size_t len, uint8_t buf[]) {
                 }
 
                 currentState.setValue(state.c_str());
+
+                // Log status changes, but not the clock ticking every minute
+                static String lastLogKey = "";
+                String key = result.substring(4, 28) + result.substring(32, 46);
+                if (key != lastLogKey) {
+                    lastLogKey = key;
+                    logAdd('R', "'" + cleanAscii(result.substring(4, 12)) + "' " + state + " | " + result.substring(4, 46));
+                }
             }
         } else {
             // FA but not temp data - the display shows text instead (error codes, messages)
             notePanelMsg(result.substring(4, 12));
+            if (lastRaw2 != result.substring(4, 28)) {
+                logAdd('R', "Afișaj '" + cleanAscii(result.substring(4, 12)) + "' | " + result.substring(4, 46));
+            }
             lastRaw2 = result.substring(4, 28);
             rawData2.setValue(lastRaw2.c_str());
         }
@@ -953,6 +1192,7 @@ void handleMessage(size_t len, uint8_t buf[]) {
 
         // end of FA14
     } else if (result.substring(0, 2) == "fb") {
+        if (sniffOn) notePanelButton(buf, "slotul nostru");
         if (result != lastFB) {
             lastFB = result;
             fbData.setValue(lastFB.c_str());
@@ -981,9 +1221,11 @@ void handleMessage(size_t len, uint8_t buf[]) {
         }
         // end of AE 0D
     } else {
-        Serial.printf("Unknown message (%u): ", result.length());
-        Serial.println(result);
-        telnetSend("U: " + result);
+        static String lastUnknown = "";
+        if (result != lastUnknown) {
+            lastUnknown = result;
+            logAdd('E', "Mesaj necunoscut: " + result.substring(0, 90));
+        }
     }
 }
 
@@ -1002,12 +1244,15 @@ void sendCommand() {
         delayMicroseconds(delayTime);
         // Serial.println("Sending " + sendBuffer);
         byte byteArray[9] = {0};
-        hexCharacterStringToBytes(byteArray, sendBuffer.getHead().c_str());
+        String head = sendBuffer.getHead();
+        if (headTries == 0) logAdd('T', "Trimit " + cmdName(head) + " " + head);
+        headTries++;
+        hexCharacterStringToBytes(byteArray, head.c_str());
         tub.write(byteArray, sizeof(byteArray));
         if (digitalRead(PIN_5_PIN_DEF) != LOW) {
-            Serial.printf("ERROR: Pin5 went high before command before flush : %u\n", delayTime);
+            logAdd('E', "Pin 5 s-a schimbat în timpul trimiterii, " + cmdName(head) + " pierdută");
             delayTime = DELAY_TIME_DEFAULT;
-            sendBuffer.dequeue();
+            dropHead();
         }
         // wait for tx to finish and flush the rx buffer
         tub.flush(true);
@@ -1041,7 +1286,7 @@ String HexString2TimeString(String hexstring) {
 }
 
 // Remember display text that isn't a temperature, keeping only printable characters
-void notePanelMsg(String hex) {
+String cleanAscii(String hex) {
     String raw = HexString2ASCIIString(hex);
     String clean = "";
     for (size_t i = 0; i < raw.length(); i++) {
@@ -1049,6 +1294,11 @@ void notePanelMsg(String hex) {
         if (c >= 0x20 && c < 0x7f && c != '"' && c != '\\') clean += c;
     }
     clean.trim();
+    return clean;
+}
+
+void notePanelMsg(String hex) {
+    String clean = cleanAscii(hex);
     if (clean.length() == 0) return;
     if (clean != panelMsg) {
         telnetSend("display: " + clean);

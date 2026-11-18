@@ -86,6 +86,16 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
 .frow input[type=text]{flex:1;min-width:0}
 .frow input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.sm{padding:6px 10px;font-size:13px;margin:4px 6px 0 0}
+select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+.log{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.45;max-height:60vh;overflow:auto;margin-top:10px;border-top:1px solid var(--line);padding-top:6px;word-break:break-all}
+.ll{padding:3px 0;border-bottom:1px solid var(--line)}
+.ll .lt{color:var(--muted);margin-right:6px}
+.ll .ty{display:inline-block;min-width:16px;font-weight:700;margin-right:4px}
+.ty-E{color:#dc2626}.ty-T{color:var(--accent)}.ty-P{color:#9333ea}.ty-W{color:var(--ok)}.ty-M{color:var(--warm)}.ty-S,.ty-R{color:var(--muted)}
+.ll.E{background:rgba(220,38,38,.07)}.ll.P,.ll.M{background:var(--accent-bg)}
+.lrow{display:flex;gap:8px;align-items:center;margin-top:8px}
+.lrow input[type=text]{flex:1;min-width:0}
 </style>
 </head>
 <body>
@@ -170,10 +180,37 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
       <div class="kv"><span>Pornit de</span><span id="uptime">-</span></div>
       <div class="kv"><span>Home Assistant (MQTT)</span><span id="mqtt">-</span></div>
       <div class="kv"><span>Comenzi în așteptare</span><span id="queue">0</span></div>
+      <div class="kv"><span>Ultima repornire</span><span id="boot">-</span></div>
+      <div class="kv"><span>Reporniri</span><span id="boots">-</span></div>
       <a class="btn" id="otaLink" href="#">Actualizare firmware</a>
       <a class="btn" href="/raw">Pagina veche</a>
+      <button class="btn" id="qClear">Golește coada</button>
+      <button class="btn" id="restart">Repornește modulul</button>
       <button class="btn danger" id="wifiReset">Schimbă rețeaua WiFi</button>
       <p class="small">„Schimbă rețeaua WiFi” șterge rețeaua salvată. Modulul pornește apoi hotspot-ul „Jacuzzi-Setup”, la care te conectezi de pe telefon ca să alegi rețeaua nouă.</p>
+    </section>
+  </details>
+
+  <details id="logBox">
+    <summary>Jurnal (depanare)</summary>
+    <section class="card">
+      <div class="frow"><input type="checkbox" id="sniff"><label for="sniff" style="font-size:15px">Captează butoanele panoului fizic</label></div>
+      <p class="small" style="margin:2px 0 8px">Bifează, apasă un buton pe panoul jacuzzi-ului, apoi scrie mai jos ce ai apăsat. Codul apare în jurnal cu „P”.</p>
+      <div class="lrow"><input type="text" id="note" maxlength="100" placeholder="am apăsat Jet o dată" autocomplete="off"><button class="btn sm" id="noteAdd" style="margin:0">Adaugă notă</button></div>
+      <div class="lrow">
+        <select id="lf" aria-label="Filtru">
+          <option value="">Toate</option>
+          <option value="TWP">Comenzi și panou</option>
+          <option value="PM">Panou fizic și note</option>
+          <option value="E">Doar erori</option>
+          <option value="RM">Mesaje de la jacuzzi</option>
+        </select>
+      </div>
+      <button class="btn sm" id="lPause">Pauză</button>
+      <button class="btn sm" id="lCopy">Copiază</button>
+      <button class="btn sm" id="lClear">Golește</button>
+      <div class="small" style="margin-top:8px">R primit · T trimis · P panou fizic · W din pagină · S sistem · E eroare · M notă</div>
+      <div class="log" id="log"></div>
     </section>
   </details>
 </main>
@@ -216,8 +253,8 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
       $('targetHint').textContent='';
     }
 
-    setTile('jet1', S.pump1>0, S.pump1>0?'Pornite':'Oprite');
-    setTile('jet2', S.pump2>0, S.pump2>0?'Pornite':'Oprite');
+    setTile('jet1', lvl(S.p1l,S.pump1)>0, lvlTxt(lvl(S.p1l,S.pump1)));
+    setTile('jet2', lvl(S.p2l,S.pump2)>0, lvlTxt(lvl(S.p2l,S.pump2)));
     setTile('light', !!S.light, S.light?'Aprinsă':'Stinsă');
 
     var m = parseInt(S.mode,10);
@@ -231,10 +268,15 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
     $('uptime').textContent = fmtUptime(S.uptime);
     $('mqtt').textContent = S.mqtt ? 'Activ' : 'Dezactivat';
     var q=parseInt(S.queue||0,10); $('queue').textContent=q;
+    $('boot').textContent = S.boot || '-';
+    $('boots').textContent = S.boots || '-';
+    if (document.activeElement!==$('sniff')) $('sniff').checked = !!S.sniff;
     var busy=q>0;
     ['jet1','jet2','aux','light'].forEach(function(id){ $(id).classList.toggle('busy', busy); });
   }
 
+  function lvl(l,p){ var n=parseInt(l,10); return isNaN(n) ? (p>0?1:0) : n; }
+  function lvlTxt(n){ return n===2 ? 'Treapta 2' : (n===1 ? 'Treapta 1' : 'Oprite'); }
   function setTile(id,on,txt){ var el=$(id); el.classList.toggle('on',on); el.querySelector('.st').textContent=txt; }
 
   function onStatus(d){ S=d; lastMsg=Date.now(); setConn(true); render(); renderErr(); }
@@ -286,6 +328,76 @@ input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid 
     if(!confirm('Ștergi rețeaua WiFi salvată? Modulul repornește în modul de configurare.')) return;
     fetch('/api/wifireset',{method:'POST'}).then(function(){ toast('Repornesc. Conectează-te la „Jacuzzi-Setup”.'); });
   };
+
+  function post(path){ return fetch(path,{method:'POST'}).then(function(r){ return r.json(); }).catch(function(){ return {ok:false}; }); }
+  $('qClear').onclick=function(){ post('/api/queue/clear').then(function(r){ toast(r.ok?('Coada golită ('+r.msg+')'):'Nu a mers'); }); };
+  $('restart').onclick=function(){
+    if(!confirm('Repornești modulul? Durează aproximativ 10 secunde.')) return;
+    post('/api/restart').then(function(){ toast('Repornesc…'); });
+  };
+
+  // ---- debug log ----
+  var LG={seq:0, lines:[], paused:false, timer:null};
+  function pad(n){ return (n<10?'0':'')+n; }
+  function clock(d){ return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
+  function renderLog(){
+    var f=$('lf').value, box=$('log'), atBottom=box.scrollHeight-box.scrollTop-box.clientHeight<30;
+    box.innerHTML='';
+    LG.lines.forEach(function(l){
+      if(f && f.indexOf(l.ty)<0) return;
+      var d=document.createElement('div'); d.className='ll '+l.ty;
+      var t=document.createElement('span'); t.className='lt'; t.textContent=l.when;
+      var y=document.createElement('span'); y.className='ty ty-'+l.ty; y.textContent=l.ty;
+      var x=document.createElement('span'); x.textContent=l.text;
+      d.appendChild(t); d.appendChild(y); d.appendChild(x);
+      var m=l.ty==='P' && l.text.match(/fb06[0-9a-f]{14}/);
+      if(m){ var b=document.createElement('button'); b.className='btn sm'; b.textContent='Trimite'; b.onclick=function(){ sendHex(m[0]); }; d.appendChild(b); }
+      box.appendChild(d);
+    });
+    if(atBottom) box.scrollTop=box.scrollHeight;
+  }
+  function loadLog(){
+    if(LG.paused || !$('logBox').open) return;
+    api('/api/log?since='+LG.seq).then(function(r){
+      if(!r || !r.lines) return;
+      if(r.seq<LG.seq){ LG.seq=0; LG.lines=[]; }  // module restarted
+      var base=Date.now()-r.now;
+      r.lines.forEach(function(a){ LG.lines.push({seq:a[0], when:clock(new Date(base+a[1])), ty:a[2], text:a[3]}); LG.seq=Math.max(LG.seq,a[0]); });
+      if(LG.lines.length>400) LG.lines=LG.lines.slice(-400);
+      if(r.lines.length) renderLog();
+    });
+  }
+  function sendHex(h){
+    if(!confirm('Trimit codul '+h+' la jacuzzi?')) return;
+    post('/api/sendhex?h='+h).then(function(r){ toast(r.ok?'Trimis':(r.msg==='busy'?'Coada e plină':'Cod greșit')); });
+  }
+  $('logBox').addEventListener('toggle',function(){
+    if($('logBox').open){ loadLog(); LG.timer=setInterval(loadLog,1500); } else { clearInterval(LG.timer); }
+  });
+  $('lf').onchange=renderLog;
+  $('lPause').onclick=function(){ LG.paused=!LG.paused; this.textContent=LG.paused?'Continuă':'Pauză'; if(!LG.paused) loadLog(); };
+  $('lClear').onclick=function(){ if(!confirm('Golești jurnalul?')) return; post('/api/log/clear').then(function(){ LG.lines=[]; renderLog(); loadLog(); }); };
+  $('lCopy').onclick=function(){
+    var txt=LG.lines.map(function(l){ return l.when+' '+l.ty+' '+l.text; }).join('\n');
+    if(!txt){ toast('Jurnalul e gol'); return; }
+    var done=function(){ toast('Copiat'); };
+    if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(txt).then(done,function(){ fallbackCopy(txt); }); }
+    else fallbackCopy(txt);
+  };
+  function fallbackCopy(txt){
+    var ta=document.createElement('textarea'); ta.value=txt; ta.setAttribute('readonly',''); ta.style.position='absolute'; ta.style.left='-9999px';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0,txt.length);
+    var ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta); toast(ok?'Copiat':'Nu am putut copia');
+  }
+  $('noteAdd').onclick=function(){
+    var t=$('note').value.trim();
+    if(!t){ toast('Scrie ce ai apăsat'); $('note').focus(); return; }
+    fetch('/api/log/note',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'t='+encodeURIComponent(t)})
+      .then(function(){ $('note').value=''; loadLog(); });
+  };
+  $('note').addEventListener('keydown',function(e){ if(e.key==='Enter') $('noteAdd').onclick(); });
+  $('sniff').onchange=function(){ var on=this.checked; post('/api/log/sniff?on='+(on?1:0)).then(function(r){ toast(r.ok?(on?'Captare pornită':'Captare oprită'):'Nu a mers'); loadLog(); }); };
 
   // ---- page settings (stored on the module, same on every phone) ----
   var FEATS=[

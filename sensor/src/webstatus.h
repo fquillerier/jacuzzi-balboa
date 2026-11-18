@@ -31,6 +31,8 @@ String getStatusJSON() {
   j += ", \"light\": " + String(lightState ? "true" : "false");
   j += ", \"pump1\": " + String(pump1State);
   j += ", \"pump2\": " + String(pump2State);
+  j += ", \"p1l\": " + String(pump1Lvl);
+  j += ", \"p2l\": " + String(pump2Lvl);
   j += ", \"mode\": \"" + String((int)tubMode.getCurrentState()) + "\"";
   j += ", \"state\": \"" + jsonEscape(state) + "\"";
   j += ", \"time\": \"" + jsonEscape(timeString) + "\"";
@@ -43,6 +45,9 @@ String getStatusJSON() {
   // true while the display text was seen in the last 60 s (Balboa alternates error codes with the temperature)
   j += ", \"msgActive\": " + String((panelMsgSeen && millis() - panelMsgSeen < 60000UL) ? "true" : "false");
   j += ", \"fw\": \"" FW_VERSION "\"";
+  j += ", \"boot\": \"" + jsonEscape(bootReason) + "\"";
+  j += ", \"boots\": " + String(bootCount);
+  j += ", \"sniff\": " + String(sniffOn ? "true" : "false");
   j += " } }";
   return j;
 }
@@ -67,7 +72,7 @@ void handleSend() {
 
     String message = webserver.arg("plain");
     webserver.send(200, "text/plain", message);
-    Serial.printf("Send data: %s\n", message.c_str());
+    logAdd('W', "Pagina /send: " + message);
     sendBuffer.enqueue(message);
 }
 
@@ -85,10 +90,12 @@ void handleApiStatus() {
 // Each action is one simulated button press on the topside panel.
 void handleApiCmd() {
   String a = webserver.arg("a");
-  if (sendBuffer.isFull()) {
+  if (sendBuffer.itemCount() >= SINGLE_CMD_QUEUE_MAX) {
+    logAdd('W', "Pagina: " + a + " refuzat, coada are " + String(sendBuffer.itemCount()) + " comenzi");
     sendApiResult(false, "busy");
     return;
   }
+  logAdd('W', "Pagina: buton " + a);
   if (a == "up") {
     sendBuffer.enqueue(COMMAND_UP);
   } else if (a == "down") {
@@ -124,6 +131,7 @@ void handleApiTarget() {
     sendApiResult(false, "out of range");
     return;
   }
+  logAdd('W', "Pagina: temperatura dorită " + String(t, 1) + " (acum " + String(tubTargetTemp, 1) + ")");
   if (setTargetTemperature(t)) {
     sendApiResult(true, "target " + String(t, 1));
   } else {
@@ -143,6 +151,7 @@ void handleApiMode() {
     sendApiResult(true, "no change");
     return;
   }
+  logAdd('W', "Pagina: mod " + String(currentIndex) + " -> " + String(m));
   sendBuffer.enqueue(COMMAND_CHANGE_MODE);
   setOption(currentIndex, m, 3, COMMAND_DOWN);
   sendBuffer.enqueue(COMMAND_CHANGE_MODE);
@@ -155,7 +164,67 @@ void handleApiWifiReset() {
   delay(500);
   WiFiManager wm;
   wm.resetSettings();
-  ESP.restart();
+  restartWith("schimbare rețea WiFi din pagină");
+}
+
+// POST /api/restart
+void handleApiRestart() {
+  sendApiResult(true, "restarting");
+  delay(500);
+  restartWith("repornire din pagină");
+}
+
+// POST /api/queue/clear - drop every command still waiting
+void handleApiQueueClear() {
+  int n = queueClear();
+  logAdd('W', "Pagina: am golit coada (" + String(n) + " comenzi)");
+  sendApiResult(true, String(n));
+}
+
+// POST /api/log/clear
+void handleApiLogClear() {
+  logClear();
+  logAdd('W', "Jurnal golit");
+  sendApiResult(true, "cleared");
+}
+
+// POST /api/log/note  (form field t) - a note typed by the user, e.g. "am apăsat Jet pe panou"
+void handleApiLogNote() {
+  String t = webserver.arg("t");
+  t.trim();
+  if (t.length() == 0) {
+    sendApiResult(false, "empty");
+    return;
+  }
+  logAdd('M', t.substring(0, 100));
+  sendApiResult(true, "ok");
+}
+
+// POST /api/log/sniff?on=1|0 - log button codes from the physical panel
+void handleApiSniff() {
+  sniffOn = webserver.arg("on") == "1";
+  logAdd('S', sniffOn ? "Captare butoane panou fizic: pornită" : "Captare butoane panou fizic: oprită");
+  sendApiResult(true, sniffOn ? "on" : "off");
+}
+
+// POST /api/sendhex?h=fb0603450e0006f9xx - send one raw 9-byte button frame (testing codes seen from the panel)
+void handleApiSendHex() {
+  String h = webserver.arg("h");
+  h.trim();
+  h.toLowerCase();
+  bool ok = h.length() == 18 && h.startsWith("fb06");
+  for (size_t i = 0; ok && i < h.length(); i++) ok = isxdigit((unsigned char)h[i]);
+  if (!ok) {
+    sendApiResult(false, "bad code");
+    return;
+  }
+  if (sendBuffer.itemCount() >= SINGLE_CMD_QUEUE_MAX) {
+    sendApiResult(false, "busy");
+    return;
+  }
+  logAdd('W', "Pagina: test cod " + h);
+  sendBuffer.enqueue(h);
+  sendApiResult(true, h);
 }
 
 // ---------------------------------------------------------------------------
