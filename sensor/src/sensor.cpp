@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.5.1"
+#define FW_VERSION "1.5.2"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -193,7 +193,7 @@ unsigned long headSince = 0;          // when the current first command started 
 uint16_t headTries = 0;               // how many times it was sent
 unsigned long lastWebServe = 0;
 volatile uint32_t pin5Edges = 0;      // panel-select pulses, counted by the interrupt
-volatile bool rxFlushReq = false;     // set by the interrupt, the RX buffer is cleared in loop()
+TaskHandle_t rxFlushTask = NULL;      // woken by the pin 5 interrupt, clears the RX buffer
 uint32_t pin5Rate = 0;                // pulses per second, measured every 5 s
 bool sniffOn = false;                 // log button codes sent by the physical panel
 String bootReason = "";
@@ -239,13 +239,23 @@ void clearRXbuffer(void) {
 
 // Triggered when pin5 falling - ie our panel is selected
 // clears serial receive buffer
-// Kept tiny on purpose: it used to call uart_flush() here, which takes a lock and is far too slow for an
-// interrupt. With a fast or noisy pin 5 signal the interrupts piled up and the interrupt watchdog
-// restarted the ESP32 every few seconds. The buffer is now cleared in loop() as soon as it sees the flag.
+// Kept tiny on purpose: it used to call uart_flush() here, which takes a lock and must not run inside an
+// interrupt; the interrupt watchdog then restarted the ESP32 every few seconds. Clearing it later in loop()
+// (v1.5.1) was too late: part of our message was already thrown away. Now the interrupt wakes a
+// top-priority task on the same core, which clears the buffer within microseconds, outside the interrupt.
+void rxFlushLoop(void* arg) {
+    for (;;) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        clearRXbuffer();
+    }
+}
+
 void IRAM_ATTR panelSelected() {
     msgStartTime = micros();
     pin5Edges++;
-    rxFlushReq = true;
+    BaseType_t woken = pdFALSE;
+    if (rxFlushTask) vTaskNotifyGiveFromISR(rxFlushTask, &woken);
+    if (woken) portYIELD_FROM_ISR();
 }
 
 /**
@@ -669,6 +679,8 @@ void setup() {
     tub.updateBaudRate(115200);
 #endif
 
+    xTaskCreatePinnedToCore(rxFlushLoop, "rxFlush", 2048, NULL, configMAX_PRIORITIES - 1, &rxFlushTask,
+                            xPortGetCoreID());
     attachPanelInterrupt();
 
     webota
@@ -911,11 +923,6 @@ void readSerial(bool panelSelect) {
     }
 }
 void loop() {
-    if (rxFlushReq) {  // our turn just started: drop whatever was meant for the other panels
-        rxFlushReq = false;
-        clearRXbuffer();
-        snLen = 0;
-    }
     bool panelSelect = (GPIO.in >> PIN_5_PIN_DEF) & 0x1;  // LOW when we are meant to read data
     readSerial(panelSelect);
     commandQueueSize.setValue((u_int8_t) sendBuffer.itemCount());
