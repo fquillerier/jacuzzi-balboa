@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.5.2"
+#define FW_VERSION "1.6.0"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -209,11 +209,13 @@ String cmdName(const String& hex);
 void dropHead();
 int queueClear();
 void restartWith(const String& why);
+void attachPanelInterrupt();
 
 #include "telnet.h"
 #include "weblog.h"
 #include "webui.h"
 #include "webstatus.h"
+#include "ota_online.h"
 
 byte nibble(char c);
 void hexCharacterStringToBytes(byte* byteArray, const char* hexString);
@@ -724,6 +726,7 @@ void setup() {
     webserver.on("/api/history", handleApiHistory);
     webserver.on("/api/log", handleApiLog);
     webserver.on("/api/time", HTTP_POST, handleApiTime);
+    webserver.on("/api/ota", HTTP_POST, handleApiOta);
     webserver.on("/api/log/clear", HTTP_POST, handleApiLogClear);
     webserver.on("/api/log/note", HTTP_POST, handleApiLogNote);
     webserver.on("/api/log/sniff", HTTP_POST, handleApiSniff);

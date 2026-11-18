@@ -84,7 +84,9 @@ Dacă rețeaua salvată nu e disponibilă la pornire, hotspot-ul Jacuzzi-Setup s
 
 ## Actualizare firmware prin WiFi
 
-Din pagină: **Setări și informații → Actualizare firmware** (sau `http://jacuzzi.local:8080/update`), apoi încarci `jacuzzi-update.bin`.
+**Online (de la 1.6.0):** **Setări și informații → Verifică actualizări → Instalează**. Modulul descarcă singur ultima versiune din [Releases](https://github.com/zaiclopz/jacuzzi-balboa/releases), verifică fișierul (SHA-256) și repornește. Telefonul trebuie să aibă internet. Ce s-a schimbat la fiecare versiune: [CHANGELOG.md](CHANGELOG.md).
+
+**Manual:** **Setări și informații → Update manual (fișier)** (sau `http://jacuzzi.local:8080/update`), apoi încarci `jacuzzi-update.bin` din Releases.
 
 ## API (pentru integrări)
 

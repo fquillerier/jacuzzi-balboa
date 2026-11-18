@@ -162,7 +162,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   </section>
 
   <details>
-    <summary>Setări și informații</summary>
+    <summary>Setări și informații<span id="updDot" class="hide" style="color:var(--accent);font-weight:600"> · actualizare disponibilă</span></summary>
     <section class="card">
       <div class="label">Personalizare</div>
       <label class="fld">Numele afișat sus<input type="text" id="cfgTitle" maxlength="30" autocomplete="off"></label>
@@ -182,7 +182,11 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
       <div class="kv"><span>Comenzi în așteptare</span><span id="queue">0</span></div>
       <div class="kv"><span>Ultima repornire</span><span id="boot">-</span></div>
       <div class="kv"><span>Reporniri</span><span id="boots">-</span></div>
-      <a class="btn" id="otaLink" href="#">Actualizare firmware</a>
+      <div class="kv"><span>Actualizare online</span><span id="updTxt">-</span></div>
+      <div id="updNotes" class="small hide" style="white-space:pre-wrap;margin-top:8px;padding:10px;background:var(--bg);border-radius:10px"></div>
+      <button class="btn" id="updCheck">Verifică actualizări</button>
+      <button class="btn primary hide" id="updInstall">Instalează</button>
+      <a class="btn" id="otaLink" href="#">Update manual (fișier)</a>
       <a class="btn" href="/raw">Pagina veche</a>
       <button class="btn" id="qClear">Golește coada</button>
       <button class="btn" id="restart">Repornește modulul</button>
@@ -281,7 +285,51 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   function lvlTxt(n){ return n===2 ? 'Treapta 2' : (n===1 ? 'Treapta 1' : 'Oprite'); }
   function setTile(id,on,txt){ var el=$(id); el.classList.toggle('on',on); el.querySelector('.st').textContent=txt; }
 
-  function onStatus(d){ S=d; lastMsg=Date.now(); setConn(true); render(); renderErr(); }
+  var lastFw=null;
+  function onStatus(d){
+    S=d; lastMsg=Date.now(); setConn(true); render(); renderErr(); renderOta();
+    if(d.fw && d.fw!==lastFw){ lastFw=d.fw; checkUpdate(false); }  // first status, and again after an update
+  }
+
+  // ---- online update from the GitHub releases ----
+  var UPD=null, REPO_API='https://api.github.com/repos/zaiclopz/jacuzzi-balboa/releases/latest';
+  function cmpVer(a,b){ a=String(a).split('.'); b=String(b).split('.'); for(var i=0;i<4;i++){ var x=parseInt(a[i]||0,10), y=parseInt(b[i]||0,10); if(x!==y) return x<y?-1:1; } return 0; }
+  function showUpd(txt,notes,canInstall){
+    $('updTxt').textContent=txt;
+    $('updNotes').textContent=notes||''; $('updNotes').classList.toggle('hide',!notes);
+    $('updInstall').classList.toggle('hide',!canInstall);
+    $('updDot').classList.toggle('hide',!canInstall);
+  }
+  function checkUpdate(manual){
+    if(manual) $('updTxt').textContent='Verific…';
+    fetch(REPO_API,{cache:'no-store'}).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(function(d){
+      var ver=String(d.tag_name||'').replace(/^v/,'');
+      var a=(d.assets||[]).filter(function(x){ return x.name==='jacuzzi-update.bin'; })[0];
+      var m=String(d.body||'').match(/sha256:\s*([0-9a-f]{64})/i);
+      var sha=(a && a.digest && a.digest.indexOf('sha256:')===0) ? a.digest.slice(7) : (m?m[1]:'');
+      if(!ver || !a || !sha){ UPD=null; showUpd('Nu găsesc fișierul de actualizare','',false); return; }
+      if(cmpVer(ver,S.fw||'0')<=0){ UPD=null; showUpd('Ai ultima versiune ('+(S.fw||ver)+')','',false); return; }
+      UPD={ver:ver, url:a.browser_download_url, sha:sha.toLowerCase()};
+      var notes=String(d.body||'').replace(/^.*sha256:.*$/gim,'').replace(/\r/g,'').trim();
+      showUpd('Versiune nouă: '+ver+' (ai '+(S.fw||'-')+')', notes, true);
+    }).catch(function(){ if(manual) showUpd('Nu pot contacta GitHub. Telefonul are internet?','',false); });
+  }
+  var OTA_ERR={'busy':'Se trimit comenzi, mai încearcă peste câteva secunde','not newer':'Versiunea nu e mai nouă','already running':'Actualizarea rulează deja','bad url':'Adresă greșită','bad sha':'Lipsește verificarea fișierului'};
+  function renderOta(){
+    var st=S.ota||'';
+    if(st==='download'){ $('updTxt').textContent='Se descarcă '+(S.otaPct>=0?S.otaPct:0)+'%'; $('updInstall').classList.add('hide'); }
+    else if(st==='done'){ $('updTxt').textContent='Instalat, modulul repornește…'; $('updInstall').classList.add('hide'); }
+    else if(st.indexOf('error:')===0 && UPD){ $('updTxt').textContent='Eroare: '+st.slice(6).trim(); $('updInstall').classList.remove('hide'); }
+  }
+  $('updCheck').onclick=function(){ checkUpdate(true); };
+  $('updInstall').onclick=function(){
+    if(!UPD) return;
+    if(!confirm('Instalez versiunea '+UPD.ver+'? Durează cam un minut, apoi modulul repornește singur.')) return;
+    post('/api/ota?url='+encodeURIComponent(UPD.url)+'&sha='+UPD.sha+'&ver='+encodeURIComponent(UPD.ver)).then(function(r){
+      if(r.ok){ toast('Descarc actualizarea…'); $('updInstall').classList.add('hide'); }
+      else toast(OTA_ERR[r.msg]||'Actualizarea nu a pornit');
+    });
+  };
 
   function setConn(live){ $('dot').className='dot'+(live?' live':''); $('connTxt').textContent= live?'Conectat':'Fără legătură'; }
 

@@ -19,6 +19,10 @@ String jsonEscape(const String& s) {
   return out;
 }
 
+extern char otaState[96];
+extern volatile int otaPct;
+extern TaskHandle_t otaTask;
+
 String getStatusJSON() {
   float ttt = 0;
   if (heaterState && tubTargetTemp > 0 && tubTemp > 0 && tubTemp < tubTargetTemp) {
@@ -48,6 +52,8 @@ String getStatusJSON() {
   j += ", \"boot\": \"" + jsonEscape(bootReason) + "\"";
   j += ", \"boots\": " + String(bootCount);
   j += ", \"p5\": " + String(pin5Rate);
+  j += ", \"ota\": \"" + jsonEscape(String(otaState)) + "\"";
+  j += ", \"otaPct\": " + String((int)otaPct);
   j += ", \"sniff\": " + String(sniffOn ? "true" : "false");
   j += " } }";
   return j;
@@ -92,6 +98,10 @@ void handleApiStatus() {
 // Each action is one simulated button press on the topside panel.
 void handleApiCmd() {
   String a = webserver.arg("a");
+  if (otaTask) {
+    sendApiResult(false, "busy");
+    return;
+  }
   if (!panelDetected) {
     sendApiResult(false, "nopanel");
     return;
