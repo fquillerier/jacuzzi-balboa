@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.4.0"
+#define FW_VERSION "1.4.1"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -1232,6 +1232,10 @@ void handleMessage(size_t len, uint8_t buf[]) {
 unsigned long lastCmdTime = 0;
 void sendCommand() {
     if (sendBuffer.isEmpty()) {
+        return;
+    }
+    // Without the pin 5 signal we can't know when it is our turn; sending anyway talks over the controller
+    if (!panelDetected) {
         return;
     }
     if((millis() - lastCmdTime) >= 400) {

@@ -205,6 +205,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
       </div>
       <button class="btn sm" id="lPause">Pauză</button>
       <button class="btn sm" id="lCopy">Copiază</button>
+      <button class="btn sm" id="lExport">Exportă fișier</button>
       <button class="btn sm" id="lClear">Golește</button>
       <div class="small" style="margin-top:8px">R primit · T trimis · P panou fizic · W din pagină · S sistem · E eroare · M notă</div>
       <div class="log" id="log"></div>
@@ -293,13 +294,13 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   setInterval(function(){ if(Date.now()-lastMsg>20000) setConn(false); },5000);
 
   function cmd(a, label){
-    api('/api/cmd?a='+a).then(function(r){ toast(r.ok ? label : (r.msg==='busy'?'Se trimit încă comenzi, mai încearcă':'Comanda nu a mers')); });
+    api('/api/cmd?a='+a).then(function(r){ toast(r.ok ? label : r.msg==='nopanel' ? 'Pinul 5 nu e conectat, comenzile sunt oprite' : (r.msg==='busy'?'Se trimit încă comenzi, mai încearcă':'Comanda nu a mers')); });
   }
 
   function step(delta){
     var tgt=fmtTemp(S.target);
     if (tgt===null && desired===null){
-      api('/api/cmd?a=up').then(function(){ toast('Citesc temperatura setată…'); });
+      api('/api/cmd?a=up').then(function(r){ toast(r.msg==='nopanel' ? 'Pinul 5 nu e conectat, comenzile sunt oprite' : 'Citesc temperatura setată…'); });
       return;
     }
     var base = desired!==null ? desired : tgt;
@@ -310,7 +311,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
       var v=desired;
       api('/api/target?t='+v.toFixed(1)).then(function(r){
         desired=null; render();
-        toast(r.ok ? ('Setez '+v.toFixed(1)+' °C') : (r.msg==='target unknown'?'Citesc temperatura setată, încearcă din nou':'Nu am putut seta temperatura'));
+        toast(r.ok ? ('Setez '+v.toFixed(1)+' °C') : r.msg==='nopanel' ? 'Pinul 5 nu e conectat, comenzile sunt oprite' : (r.msg==='target unknown'?'Citesc temperatura setată, încearcă din nou':'Nu am putut seta temperatura'));
       });
     },1500);
   }
@@ -319,7 +320,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   $('minus').onclick=function(){ step(-0.5); };
   ['jet1','jet2','aux','light'].forEach(function(k){ $(k).onclick=function(){ cmd(k, featName(k)); }; });
   var mb=$('modes').querySelectorAll('button');
-  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mod: '+MODE_NAMES[m]):'Nu am putut schimba modul'); }); }; }
+  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mod: '+MODE_NAMES[m]):(r.msg==='nopanel'?'Pinul 5 nu e conectat, comenzile sunt oprite':'Nu am putut schimba modul')); }); }; }
   $('otaLink').href='http://'+location.hostname+':8080/update';
   $('wifiReset').onclick=function(){
     if(!confirm('Ștergi rețeaua WiFi salvată? Modulul repornește în modul de configurare.')) return;
@@ -366,7 +367,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   }
   function sendHex(h){
     if(!confirm('Trimit codul '+h+' la jacuzzi?')) return;
-    post('/api/sendhex?h='+h).then(function(r){ toast(r.ok?'Trimis':(r.msg==='busy'?'Coada e plină':'Cod greșit')); });
+    post('/api/sendhex?h='+h).then(function(r){ toast(r.ok?'Trimis':r.msg==='nopanel'?'Pinul 5 nu e conectat, comenzile sunt oprite':(r.msg==='busy'?'Coada e plină':'Cod greșit')); });
   }
   $('logBox').addEventListener('toggle',function(){
     if($('logBox').open){ loadLog(); LG.timer=setInterval(loadLog,1500); } else { clearInterval(LG.timer); }
@@ -374,8 +375,25 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   $('lf').onchange=renderLog;
   $('lPause').onclick=function(){ LG.paused=!LG.paused; this.textContent=LG.paused?'Continuă':'Pauză'; if(!LG.paused) loadLog(); };
   $('lClear').onclick=function(){ if(!confirm('Golești jurnalul?')) return; post('/api/log/clear').then(function(){ LG.lines=[]; renderLog(); loadLog(); }); };
+  function logText(){
+    if(!LG.lines.length) return '';
+    var head=['Jurnal '+CFG.title+' · '+new Date().toLocaleString('ro-RO'),
+      'Firmware '+(S.fw||'-')+' · pornit de '+fmtUptime(S.uptime)+' · ultima repornire: '+(S.boot||'-')+' · reporniri: '+(S.boots||'-'),
+      'Pin 5: '+(S.panel?'detectat':'nedetectat')+' · coadă: '+(S.queue||0)+' · stare: '+(S.state||'-')+' · apă '+(S.temp||'-')+' °C',
+      ''];
+    return head.concat(LG.lines.map(function(l){ return l.when+' '+l.ty+' '+l.text; })).join('\n')+'\n';
+  }
+  $('lExport').onclick=function(){
+    var txt=logText();
+    if(!txt){ toast('Jurnalul e gol'); return; }
+    var d=new Date(), name='jurnal-jacuzzi-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.txt';
+    var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'})); a.download=name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); },5000);
+    toast('Salvat '+name);
+  };
   $('lCopy').onclick=function(){
-    var txt=LG.lines.map(function(l){ return l.when+' '+l.ty+' '+l.text; }).join('\n');
+    var txt=logText();
     if(!txt){ toast('Jurnalul e gol'); return; }
     var done=function(){ toast('Copiat'); };
     if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(txt).then(done,function(){ fallbackCopy(txt); }); }

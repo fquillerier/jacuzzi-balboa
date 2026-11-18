@@ -77,6 +77,7 @@ void handleSend() {
 }
 
 void sendApiResult(bool ok, const String& msg) {
+  if (!ok && msg == "nopanel") logAdd('W', "Comandă refuzată: pinul 5 nu e detectat");
   String j = "{\"ok\": " + String(ok ? "true" : "false") + ", \"msg\": \"" + jsonEscape(msg) + "\"}";
   webserver.send(ok ? 200 : 400, "application/json", j);
 }
@@ -90,6 +91,10 @@ void handleApiStatus() {
 // Each action is one simulated button press on the topside panel.
 void handleApiCmd() {
   String a = webserver.arg("a");
+  if (!panelDetected) {
+    sendApiResult(false, "nopanel");
+    return;
+  }
   if (sendBuffer.itemCount() >= SINGLE_CMD_QUEUE_MAX) {
     logAdd('W', "Pagina: " + a + " refuzat, coada are " + String(sendBuffer.itemCount()) + " comenzi");
     sendApiResult(false, "busy");
@@ -125,6 +130,10 @@ void handleApiTarget() {
     sendApiResult(false, "missing t");
     return;
   }
+  if (!panelDetected) {
+    sendApiResult(false, "nopanel");
+    return;
+  }
   float t = webserver.arg("t").toFloat();
   t = round(t * 2) / 2.0;
   if (t < 26 || t > 40) {
@@ -141,6 +150,10 @@ void handleApiTarget() {
 
 // /api/mode?m=0|1|2   (Standard / Economy / Sleep)
 void handleApiMode() {
+  if (!panelDetected) {
+    sendApiResult(false, "nopanel");
+    return;
+  }
   int m = webserver.arg("m").toInt();
   if (!webserver.hasArg("m") || m < 0 || m > 2) {
     sendApiResult(false, "bad mode");
@@ -216,6 +229,10 @@ void handleApiSendHex() {
   for (size_t i = 0; ok && i < h.length(); i++) ok = isxdigit((unsigned char)h[i]);
   if (!ok) {
     sendApiResult(false, "bad code");
+    return;
+  }
+  if (!panelDetected) {
+    sendApiResult(false, "nopanel");
     return;
   }
   if (sendBuffer.itemCount() >= SINGLE_CMD_QUEUE_MAX) {
