@@ -25,24 +25,39 @@ Changements par rapport à l'original :
 
 ## Matériel
 
-- ESP32 DevKit (ESP-WROOM-32)
-- Module TTL–RS485 à contrôle automatique de direction (broches TXD, RXD, VCC, GND, **sans** RE/DE)
-- Abaisseur réglé sur 5 V (si l'ESP32 est alimenté par le spa) ou chargeur USB 5 V
-- Connecteur Molex Micro-Fit 3.0, 8 broches (boîtier 43025-0800 + cosses femelles 43030)
-- Fils Dupont femelles
-
-## Branchements
-
-Broches du connecteur de la carte, numérotées comme sur la photo du [wiki du projet d'origine](https://github.com/netmindz/balboa_GL_ML_spa_control/wiki/Install-Guide) (1–2 en haut, 7–8 en bas), sur un port « Main panel » libre (J70 à J73 sur un GL8000) :
-
-| Carte du spa | Relié à |
+| Article | Remarque |
 |---|---|
-| Broche 1 | RS485 B |
-| Broche 3 | RS485 A |
-| Broche 5 (sélection clavier) | ESP32 GPIO18 |
-| Broche 6 (≈ 9,7 V) | Abaisseur IN+ (seulement si alimentation par le spa) |
-| Broche 7 ou 8 (masse) | ESP32 GND et abaisseur IN− |
-| Broches 2 et 4 | Non connectées |
+| ESP32 DevKit (ESP-WROOM-32), USB-C | 30 ou 38 broches, les deux conviennent |
+| Module TTL–RS485 à contrôle **automatique** de direction | broches TXD, RXD, VCC, GND, **sans** RE/DE |
+| Câble Molex **Micro-Fit 3.0**, 8 broches (prise 43025-0800), fils nus | pas de 3 mm, vérifié sur la prise du ML700 |
+| 2 résistances : **10 kΩ** et **20 kΩ** (ou 3 × 10 kΩ) | pont diviseur de la broche 5 |
+| Chargeur USB 5 V + câble USB-C | alimentation pour le test |
+| Câbles Dupont, gaine thermorétractable, boîtier IP65, presse-étoupe PG7 | montage final |
+| *Facultatif :* abaisseur réglé sur 5 V | pour alimenter l'ESP32 par le spa (broche 6) |
+
+## Branchements (spa Balboa GL8000M3, port J70)
+
+Les ports clavier « MAIN PANELS » sont **J70 à J73**. Sur ce spa, le clavier ML700 est sur **J72** ; le module se branche sur **J70**, qui est libre. Ne pas utiliser les ports « AUX. PANELS » (6 broches), ni de câble en Y.
+
+### Repérage des broches de J70
+
+Sur la carte, la prise est verticale, avec **l'ergot à gauche**. Un **petit triangle** imprimé sous la prise, côté droit, repère la **broche 1**. C'est l'inverse de la photo du projet d'origine, où la prise est tournée d'un demi-tour.
+
+![Brochage de J70 sur la carte GL8000](docs/brochage-J70.jpg)
+
+| Broche (position sur la photo) | Rôle | Relié à | Mesuré (spa sous tension) |
+|---|---|---|---|
+| **1** (bas, droite) | RS485 B | module RS485 **B** | à mesurer (≈ 2–3 V attendus) |
+| **3** (3ᵉ rang, droite) | RS485 A | module RS485 **A** | à mesurer (≈ 2–3 V attendus) |
+| **5** (2ᵉ rang, droite) | sélection clavier (signal 5 V) | **GPIO18 par le pont diviseur** | ≈ 5 V ✅ |
+| **6** (2ᵉ rang, gauche) | ≈ 9 V | rien pour le test (plus tard : abaisseur 5 V) | 9 V ✅ |
+| **7** (haut, droite) | masse | GND commun | 0 V ✅ |
+| **8** (haut, gauche) | masse | (inutile si la 7 est branchée) | 0 V ✅ |
+| 2 et 4 | — | non connectées | — |
+
+### Schéma complet
+
+![Schéma de montage complet](docs/montage.svg)
 
 | Module RS485 | ESP32 |
 |---|---|
@@ -51,11 +66,41 @@ Broches du connecteur de la carte, numérotées comme sur la photo du [wiki du p
 | VCC | 3V3 |
 | GND | GND |
 
-Abaisseur OUT+ → broche 5V de l'ESP32, OUT− → GND. Vérifiez au multimètre que la sortie est bien à 5 V avant de brancher l'ESP32. N'alimentez jamais l'ESP32 en même temps par l'abaisseur et par l'USB.
+### Pont diviseur de la broche 5 (obligatoire)
 
-⚠️ **Mesurez la broche 5 au multimètre.** Elle est reliée directement à l'ESP32, qui accepte 3,3 V au maximum. Si elle est à 5 V, ajoutez un pont diviseur (10 kΩ en série, 20 kΩ vers la masse).
+La broche 5 est un signal en **5 V** (mesuré : ≈ 5 V). L'ESP32 accepte **3,6 V au maximum** sur ses entrées. Le projet d'origine la relie directement au GPIO18 ; ici, on protège l'ESP32 :
 
-⚠️ **Coupez l'alimentation du spa au tableau avant tout branchement.**
+```
+Broche 5 du spa ──[ R1 10 kΩ ]──┬── GPIO18 (ESP32)
+                                │
+                           [ R2 20 kΩ ]   (ou 2 × 10 kΩ en série)
+                                │
+Broche 7 (masse) ───────────────┴── GND (ESP32)
+```
+
+Le GPIO18 reçoit ≈ 3,3 V à l'état haut. **Mesurez vos résistances** avant de souder (les résistances bleues à 5 anneaux du tiroir font peut-être 100 Ω : elles ne conviennent pas).
+
+### Alimentation
+
+- **Pour le test : par l'USB** (chargeur 5 V). La broche 6 n'est pas branchée.
+- **Plus tard, en définitif (facultatif) :** broche 6 → abaisseur IN+, broche 7 → abaisseur IN−, puis abaisseur OUT+ → broche **5V** de l'ESP32 et OUT− → GND. Réglez l'abaisseur sur 5 V **au multimètre avant** de brancher l'ESP32, et **ne branchez jamais l'USB en même temps**.
+
+## Quand tout est reçu : déroulé du montage
+
+1. **Préparer le câble Micro-Fit :** repérer au multimètre (continuité) quel fil arrive sur les broches 1, 3, 5, 6 et 7 de la prise. Les couleurs des fils ne veulent rien dire. Isoler les fils 2, 4, 6 et 8.
+2. **Souder le pont diviseur** (R1, R2) et le vérifier au multimètre.
+3. **Câbler** l'ESP32 et le module RS485 selon le schéma, avec une masse commune.
+4. **Installer le firmware** sur l'ESP32 depuis l'ordinateur (voir plus bas), **avant** de le brancher au spa.
+5. **Couper le spa au tableau**, brancher la prise sur **J70**, ergot à gauche comme celle du ML700 sur J72.
+6. Remettre le spa sous tension. Avant de brancher l'ESP32, **mesurer le point milieu du pont diviseur** : ≈ 3,2 à 3,3 V maximum.
+7. Brancher l'ESP32 sur le **chargeur USB**, se connecter au Wi-Fi « Jacuzzi-Setup », puis ouvrir **http://jacuzzi.local**.
+8. **Test en lecture seule :** la température et le mode affichés doivent correspondre au ML700.
+   - Aucune donnée : **inverser les fils A et B**.
+   - « Broche 5 non détectée » : vérifier le fil de la broche 5 et le pont diviseur.
+9. **Capturer les touches** du ML700 (voir ci-dessous), puis tester un changement de mode Économie → Standard depuis la page.
+10. Installation définitive dans le boîtier IP65, câble passé par un presse-étoupe.
+
+⚠️ **Coupez l'alimentation du spa au tableau avant tout branchement ou débranchement.** Les mesures sous tension se font uniquement dans la zone des connecteurs basse tension, à droite de la carte, loin des borniers et des relais.
 
 ## Installer le firmware
 
