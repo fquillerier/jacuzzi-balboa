@@ -124,6 +124,8 @@ Branchement : broche **6** du spa → entrée **+** du module, broche **7** (ou 
 
 ### Méthode simple (depuis le navigateur)
 
+> **Depuis la version 1.8.1, la mémoire flash est organisée autrement** (1,9 Mo pour le programme). La première installation doit être faite par USB avec `jacuzzi-full-install.bin`. Une mise à jour par Wi-Fi depuis une version plus ancienne garderait l'ancienne organisation.
+
 1. Ouvrez [Releases](../../releases) et téléchargez `jacuzzi-full-install.bin` (installation complète). `jacuzzi-update.bin` sert aux mises à jour par Wi-Fi. Sans version publiée, prenez l'artefact `jacuzzi-firmware` du dernier build réussi dans [Actions](../../actions) (conservé 90 jours).
 2. Branchez l'ESP32 à l'ordinateur en USB et ouvrez dans Chrome ou Edge : https://espressif.github.io/esptool-js/
 3. Cliquez sur **Connect** et choisissez le port de l'ESP32.
@@ -162,6 +164,24 @@ Les codes des touches viennent de claviers de GL2000. Avant de compter dessus :
 1. Ouvrez **Journal (dépannage)** et cochez **Capturer les touches du clavier du spa**.
 2. Appuyez sur une touche du clavier du spa (ML700…), puis notez-la avec **Ajouter la note**.
 3. Le code apparaît avec la lettre **P**. Comparez-le à ceux de `sensor/src/constants.h`. Un bouton **Envoyer** permet de le rejouer pour tester.
+
+## Programmation des modes de chauffe
+
+Section **Programmation** de la page. Le module change le mode (Standard / Économie / Veille) à l'heure dite, en simulant les touches du clavier :
+
+- **Chaque semaine** : jours, heure, mode (8 horaires au maximum). Exemple : Standard le vendredi à 18:00, Économie le dimanche à 20:00.
+- **Une seule fois** : date, heure, mode (6 dates au maximum), supprimée une fois exécutée.
+- Le **prochain changement** s'affiche sous le mode de chauffe, sur la page d'accueil.
+- Le module prend l'heure sur Internet (heure de France, passage été/hiver automatique). Sans Internet, il attend que l'heure soit connue (elle est aussi donnée par le téléphone à l'ouverture de la page).
+- Si le changement est impossible sur le moment (mode inconnu, commandes en cours), le module réessaie pendant 15 minutes.
+- La section affiche aussi l'**heure du spa** et l'écart avec l'heure réelle.
+- **Pas encore possible :** régler l'heure du spa et les **cycles de filtration** depuis la page. Il faut d'abord relever avec l'espion la navigation dans les menus du ML700 (touches Time et Mode/Prog).
+
+## Codes des touches et pompe 3
+
+**Réglages et informations → Codes des touches (avancé)** : code envoyé au spa pour chaque touche. Après une capture (Journal → « Capturer les touches du clavier du spa »), collez le code affiché avec la lettre **P**, puis **Enregistrer** ; **Tester** l'envoie une fois au spa. Un champ vide remet le code par défaut.
+
+La tuile **Pompe 3** apparaît dès que le code de **Jets 3** est renseigné (il n'a pas de valeur par défaut).
 
 ## Espion du bus (analyse des trames)
 
