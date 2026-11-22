@@ -10,6 +10,8 @@
 // Our own slot (pin 5 low) is recorded from handleMessage(). The other panels' slots are read here,
 // split into frames by their first byte (FA = 23 bytes, AE = 16, FB = 9).
 
+void notePanelButton(const uint8_t* p, const char* where);  // defined in sensor.cpp
+
 #define SPY_FRAME_MAX 23
 #define SPY_SIG_N 16          // how many "kinds" of frame the simple mode remembers
 
