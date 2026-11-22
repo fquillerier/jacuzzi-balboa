@@ -33,7 +33,7 @@ Changements par rapport à l'original :
 | 2 résistances : **10 kΩ** et **20 kΩ** (ou 3 × 10 kΩ) | pont diviseur de la broche 5 |
 | Chargeur USB 5 V + câble USB-C | alimentation pour le test |
 | Câbles Dupont, gaine thermorétractable, boîtier IP65, presse-étoupe PG7 | montage final |
-| *Facultatif :* abaisseur réglé sur 5 V | pour alimenter l'ESP32 par le spa (broche 6) |
+| *Facultatif :* abaisseur 5 V à sortie USB, entrée dès 6 V | pour alimenter l'ESP32 par le spa (broche 6), voir « Alimentation » |
 
 ## Branchements (spa Balboa GL8000M3, port J70)
 
@@ -82,8 +82,26 @@ Le GPIO18 reçoit ≈ 3,3 V à l'état haut. **Mesurez vos résistances** avant 
 
 ### Alimentation
 
-- **Pour le test : par l'USB** (chargeur 5 V). La broche 6 n'est pas branchée.
-- **Plus tard, en définitif (facultatif) :** broche 6 → abaisseur IN+, broche 7 → abaisseur IN−, puis abaisseur OUT+ → broche **5V** de l'ESP32 et OUT− → GND. Réglez l'abaisseur sur 5 V **au multimètre avant** de brancher l'ESP32, et **ne branchez jamais l'USB en même temps**.
+Deux solutions possibles. On commence **toujours** par la première.
+
+**Solution 1 : chargeur USB (pour le test, et en définitif si une prise est disponible)**
+- Un chargeur USB 5 V et un câble USB-C branché sur l'ESP32.
+- La broche 6 du spa n'est **pas** branchée.
+
+**Solution 2 : alimentation par le spa (broche 6, ≈ 9 V)**
+
+Un petit module abaisseur transforme les 9 V de la broche 6 en 5 V, sur une **sortie USB** : on y branche directement le câble USB-C de l'ESP32, sans souder sur la broche 5V.
+
+| Module | Prix | Remarque |
+|---|---|---|
+| [JZK 12/24 V → 5 V 5 A, sortie USB (Amazon.co.uk)](https://www.amazon.co.uk/dp/B071ZRXKJY) | ≈ 14,60 € | celui que recommande le projet netmindz ; **non livrable en France** (vérifié le 22/11/2026) |
+| [Lot de 2 abaisseurs 6–24 V → 5 V USB 3 A (Amazon.fr)](https://www.amazon.fr/dp/B07JLTTZXL) | ≈ 5,13 € les 2 | **équivalent conseillé** : entrée dès 6 V, bonne marge avec les 9 V de la broche 6 |
+
+Branchement : broche **6** du spa → entrée **+** du module, broche **7** (ou 8) → entrée **−**, puis câble USB du module → ESP32.
+
+- **À éviter :** les modules annoncés « 9 V–24 V → 5 V ». Avec 9 V mesurés sur la broche 6, ils sont à la limite et risquent de ne pas donner 5 V stables.
+- **Ne jamais brancher le chargeur USB et le module en même temps.**
+- La broche 6 a un **courant limité**. L'ESP32 tire environ 100 à 150 mA côté 9 V lors des pointes Wi-Fi, ce que le projet netmindz utilise sans problème. Si le module redémarre tout seul, revenir à la solution 1.
 
 ## Quand tout est reçu : déroulé du montage
 
