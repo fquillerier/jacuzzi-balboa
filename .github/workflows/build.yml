@@ -55,7 +55,7 @@ jobs:
           path: out/*.bin
 
       # Every build of main publishes (or refreshes) the release for the version in sensor.cpp.
-      # The module's "Verifică actualizări" button reads the newest release from the GitHub API.
+      # The module's "Rechercher une mise à jour" button reads the newest release from the GitHub API.
       - name: Publish release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:

@@ -1,4 +1,4 @@
-// Debug log, shown on the web page under "Jurnal (depanare)".
+// Debug log, shown on the web page under "Journal (dépannage)".
 // Line types:
 //   R = received from the tub controller (display / status changes)
 //   T = command sent by us (and its result)
@@ -206,7 +206,7 @@ void handleApiTime() {
     settimeofday(&tv, nullptr);
     setenv("TZ", "EET-2EEST,M3.5.0/3,M10.5.0/4", 1);
     tzset();
-    logAdd('S', "Ora setată din telefon");
+    logAdd('S', "Heure réglée depuis le téléphone");
   }
   webserver.send(200, "application/json", "{\"ok\": true}");
 }

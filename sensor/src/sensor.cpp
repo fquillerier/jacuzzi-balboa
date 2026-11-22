@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.6.1"
+#define FW_VERSION "1.7.0"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -282,16 +282,16 @@ void setModeIdx(int m) {
 String cmdName(const String& hex) {
     String h = hex;
     h.toLowerCase();
-    if (h == COMMAND_UP) return "Temp +";
-    if (h == COMMAND_DOWN) return "Temp -";
-    if (h == COMMAND_TIME) return "Ora";
-    if (h == COMMAND_CHANGE_MODE) return "Mod";
-    if (h == COMMAND_AUX) return "Bule";
-    if (h == COMMAND_JET1) return "Jet 1";
-    if (h == COMMAND_JET2) return "Jet 2";
-    if (h == COMMAND_EMPTY) return "Gol";
-    if (h == COMMAND_LIGHT) return "Lumina";
-    return "cod necunoscut";
+    if (h == COMMAND_UP) return "Consigne +";
+    if (h == COMMAND_DOWN) return "Consigne -";
+    if (h == COMMAND_TIME) return "Heure";
+    if (h == COMMAND_CHANGE_MODE) return "Mode";
+    if (h == COMMAND_AUX) return "Blower";
+    if (h == COMMAND_JET1) return "Pompe 1";
+    if (h == COMMAND_JET2) return "Pompe 2";
+    if (h == COMMAND_EMPTY) return "Vide";
+    if (h == COMMAND_LIGHT) return "Éclairage";
+    return "code inconnu";
 }
 
 // Remove the first queued command (sent and accepted, or given up)
@@ -316,7 +316,7 @@ int queueClear() {
 
 void restartWith(const String& why) {
     prefs.putString("rstWhy", why);
-    logAdd('S', "Repornesc: " + why);
+    logAdd('S', "Redémarrage : " + why);
     logSaveFlash();
     delay(300);
     ESP.restart();
@@ -324,16 +324,16 @@ void restartWith(const String& why) {
 
 String resetReasonText(esp_reset_reason_t r) {
     switch (r) {
-        case ESP_RST_POWERON: return "pornire alimentare";
-        case ESP_RST_EXT: return "reset extern";
-        case ESP_RST_SW: return "repornire software";
-        case ESP_RST_PANIC: return "eroare program (crash)";
-        case ESP_RST_INT_WDT: return "watchdog (întreruperi blocate)";
-        case ESP_RST_TASK_WDT: return "watchdog (program blocat)";
+        case ESP_RST_POWERON: return "mise sous tension";
+        case ESP_RST_EXT: return "reset externe";
+        case ESP_RST_SW: return "redémarrage logiciel";
+        case ESP_RST_PANIC: return "erreur programme (crash)";
+        case ESP_RST_INT_WDT: return "watchdog (interruptions bloquées)";
+        case ESP_RST_TASK_WDT: return "watchdog (programme bloqué)";
         case ESP_RST_WDT: return "watchdog";
-        case ESP_RST_DEEPSLEEP: return "trezire din somn";
-        case ESP_RST_BROWNOUT: return "tensiune prea mică";
-        default: return "necunoscut";
+        case ESP_RST_DEEPSLEEP: return "réveil de veille";
+        case ESP_RST_BROWNOUT: return "tension trop faible";
+        default: return "inconnu";
     }
 }
 
@@ -356,7 +356,7 @@ void notePanelButton(const uint8_t* p, const char* where) {
     }
     snLast = h;
     snLastMs = millis();
-    logAdd('P', "Panou fizic: " + cmdName(h) + " " + h + " (" + where + ")");
+    logAdd('P', "Clavier du spa : " + cmdName(h) + " " + h + " (" + where + ")");
 }
 
 // While another panel has its turn on the bus, scan the bytes for its button frames
@@ -377,7 +377,7 @@ void sniffRead() {
         }
         if (snLen == 9) {
             snLen = 0;
-            notePanelButton(snBuf, "magistrală");
+            notePanelButton(snBuf, "bus");
         }
     }
 }
@@ -391,16 +391,16 @@ void watchdogTick() {
             headSince = now;
         } else if (now - headSince > CMD_TIMEOUT_MS) {
             String h = sendBuffer.getHead();
-            String why = headTries == 0 ? " (nu a venit rândul nostru, verifică pinul 5)" : " (jacuzzi-ul nu a răspuns)";
+            String why = headTries == 0 ? " (notre tour n'est pas venu, vérifiez la broche 5)" : " (le spa n'a pas répondu)";
             int n = queueClear();
-            logAdd('E', "Fără răspuns la " + cmdName(h) + " " + h + " după " + String(headTries) + " trimiteri" + why +
-                            ", am golit coada (" + String(n) + ")");
+            logAdd('E', "Pas de réponse à " + cmdName(h) + " " + h + " après " + String(headTries) + " envois" + why +
+                            ", file vidée (" + String(n) + ")");
         }
     }
 
     // Page not served for a long time: restart
     if (now - lastWebServe > WEB_WATCHDOG_MS) {
-        restartWith("watchdog: pagina nu a răspuns 60 s");
+        restartWith("watchdog : la page ne répond plus depuis 60 s");
     }
 
     static unsigned long lastSlow = 0;
@@ -412,12 +412,12 @@ void watchdogTick() {
     if (WiFi.status() != WL_CONNECTED) {
         if (wifiLostAt == 0) {
             wifiLostAt = now ? now : 1;
-            logAdd('E', "WiFi deconectat");
+            logAdd('E', "Wi-Fi déconnecté");
         } else if (now - wifiLostAt > WIFI_WATCHDOG_MS) {
-            restartWith("watchdog: WiFi picat 5 minute");
+            restartWith("watchdog : Wi-Fi perdu depuis 5 minutes");
         }
     } else if (wifiLostAt) {
-        logAdd('S', "WiFi reconectat după " + String((now - wifiLostAt) / 1000) + " s");
+        logAdd('S', "Wi-Fi reconnecté après " + String((now - wifiLostAt) / 1000) + " s");
         wifiLostAt = 0;
     }
 
@@ -433,16 +433,16 @@ void watchdogTick() {
         bool big = pin5Rate == 0 ? rate > 0 : (rate > pin5Rate * 3 / 2 || rate < pin5Rate * 2 / 3);
         if (rate > 0 && (rateLogAt == 0 || (big && now - rateLogAt > 60000))) {
             rateLogAt = now;
-            logAdd(rate > 20000 ? 'E' : 'S', "Pin 5: " + String(rate) + " impulsuri/s" + (rate > 20000 ? " (prea multe, semnal cu zgomot?)" : ""));
+            logAdd(rate > 20000 ? 'E' : 'S', "Broche 5 : " + String(rate) + " impulsions/s" + (rate > 20000 ? " (trop, signal parasité ?)" : ""));
         }
         pin5Rate = rate;
         if (panelDetected) {
             if (e == 0 && !p5Lost) {
                 p5Lost = true;
-                logAdd('E', "Pin 5: semnalul lipsește");
+                logAdd('E', "Broche 5 : signal absent");
             } else if (e > 0 && p5Lost) {
                 p5Lost = false;
-                logAdd('S', "Pin 5: semnal revenit");
+                logAdd('S', "Broche 5 : signal revenu");
             }
         }
     }
@@ -452,8 +452,8 @@ void watchdogTick() {
     if (now - noiseCheck >= 60000) {
         noiseCheck = now;
         if (badStartBytes || readTimeouts) {
-            logAdd('E', "RS485 ultimul minut: " + String(badStartBytes) + " octeți necunoscuți, " + String(readTimeouts) +
-                            " mesaje incomplete");
+            logAdd('E', "RS485 dernière minute : " + String(badStartBytes) + " octets inconnus, " + String(readTimeouts) +
+                            " messages incomplets");
             badStartBytes = 0;
             readTimeouts = 0;
         }
@@ -624,7 +624,7 @@ void setup() {
     esp_reset_reason_t rr = esp_reset_reason();
     bootReason = (rr == ESP_RST_SW && why.length() > 0) ? why : resetReasonText(rr);
     logBegin(bootCount, rr == ESP_RST_POWERON || rr == ESP_RST_BROWNOUT);
-    logAdd('S', "Pornire #" + String(bootCount) + ", motiv: " + bootReason + ", firmware " FW_VERSION);
+    logAdd('S', "Démarrage n°" + String(bootCount) + ", cause : " + bootReason + ", firmware " FW_VERSION);
     prefs.getString("mqttHost", "").toCharArray(mqttHost, sizeof(mqttHost));
     prefs.getString("mqttPort", "1883").toCharArray(mqttPort, sizeof(mqttPort));
     prefs.getString("mqttUser", "").toCharArray(mqttUser, sizeof(mqttUser));
@@ -634,10 +634,10 @@ void setup() {
     // network can be chosen from a phone. No passwords in the source code.
     WiFi.mode(WIFI_STA);
     WiFiManager wm;
-    WiFiManagerParameter pMqttHost("mqtt_host", "MQTT broker (optional, empty = disabled)", mqttHost, sizeof(mqttHost) - 1);
-    WiFiManagerParameter pMqttPort("mqtt_port", "MQTT port", mqttPort, sizeof(mqttPort) - 1);
-    WiFiManagerParameter pMqttUser("mqtt_user", "MQTT user", mqttUser, sizeof(mqttUser) - 1);
-    WiFiManagerParameter pMqttPass("mqtt_pass", "MQTT password", mqttPass, sizeof(mqttPass) - 1);
+    WiFiManagerParameter pMqttHost("mqtt_host", "Serveur MQTT (facultatif, vide = désactivé)", mqttHost, sizeof(mqttHost) - 1);
+    WiFiManagerParameter pMqttPort("mqtt_port", "Port MQTT", mqttPort, sizeof(mqttPort) - 1);
+    WiFiManagerParameter pMqttUser("mqtt_user", "Utilisateur MQTT", mqttUser, sizeof(mqttUser) - 1);
+    WiFiManagerParameter pMqttPass("mqtt_pass", "Mot de passe MQTT", mqttPass, sizeof(mqttPass) - 1);
     wm.addParameter(&pMqttHost);
     wm.addParameter(&pMqttPort);
     wm.addParameter(&pMqttUser);
@@ -646,7 +646,7 @@ void setup() {
     wm.setSaveParamsCallback([&saveParams]() { saveParams = true; });
     wm.setSaveConfigCallback([&saveParams]() { saveParams = true; });
     wm.setConfigPortalTimeout(SETUP_PORTAL_TIMEOUT);
-    wm.setTitle("Jacuzzi");
+    wm.setTitle("Spa");
 
     Serial.println("Connecting to WiFi (setup hotspot opens if needed)");
     if (!wm.autoConnect(SETUP_AP_NAME)) {
@@ -667,7 +667,7 @@ void setup() {
     }
     mqttEnabled = strlen(mqttHost) > 0;
 
-    logAdd('S', "WiFi conectat, IP " + WiFi.localIP().toString());
+    logAdd('S', "Wi-Fi connecté, IP " + WiFi.localIP().toString());
     clockBegin();
     setPixel(STATUS_WIFI);
 
@@ -697,12 +697,12 @@ void setup() {
 
     webota
         .onStart([]() {
-            logAdd('S', "Update firmware început");
+            logAdd('S', "Mise à jour du firmware commencée");
             detachInterrupt(digitalPinToInterrupt(PIN_5_PIN_DEF));
         })
         .onEnd([]() {
             prefs.putString("rstWhy", "update firmware");
-            logAdd('S', "Update firmware terminat, repornesc");
+            logAdd('S', "Mise à jour du firmware terminée, redémarrage");
             logSaveFlash();
             attachPanelInterrupt();
         })
@@ -943,7 +943,7 @@ void loop() {
     if (panelSelect == HIGH || !panelDetected) {  // Controller talking to other topside panels - we are in effect idle
 
         if(panelSelect == HIGH) {
-            if (!panelDetected) logAdd('S', "Pin 5 detectat, jacuzzi-ul ne dă rândul la comenzi");
+            if (!panelDetected) logAdd('S', "Broche 5 détectée, le spa nous donne la main pour les commandes");
             panelDetected = true;
         }
         else {
@@ -1150,7 +1150,7 @@ void handleMessage(size_t len, uint8_t buf[]) {
                     // next command look accepted when it was actually lost).
                     if(commandPending && !sendBuffer.isEmpty() && cmd != "0000000000") {
                         String h = sendBuffer.getHead();
-                        logAdd('T', "Acceptată " + cmdName(h) + " (" + String(headTries) + " trimiteri), răspuns cmd=" + cmd);
+                        logAdd('T', "Acceptée : " + cmdName(h) + " (" + String(headTries) + " envois), réponse cmd=" + cmd);
                         dropHead();
                         timeSinceMsgStartSensor.setValue((int) timeSinceMsgStart);
                     }
@@ -1218,7 +1218,7 @@ void handleMessage(size_t len, uint8_t buf[]) {
             // FA but not temp data - the display shows text instead (error codes, messages)
             notePanelMsg(result.substring(4, 12));
             if (lastRaw2 != result.substring(4, 28)) {
-                logAdd('R', "Afișaj '" + cleanAscii(result.substring(4, 12)) + "' | " + result.substring(4, 46));
+                logAdd('R', "Affichage '" + cleanAscii(result.substring(4, 12)) + "' | " + result.substring(4, 46));
             }
             lastRaw2 = result.substring(4, 28);
             rawData2.setValue(lastRaw2.c_str());
@@ -1239,7 +1239,7 @@ void handleMessage(size_t len, uint8_t buf[]) {
 
         // end of FA14
     } else if (result.substring(0, 2) == "fb") {
-        if (sniffOn) notePanelButton(buf, "slotul nostru");
+        if (sniffOn) notePanelButton(buf, "notre créneau");
         if (result != lastFB) {
             lastFB = result;
             fbData.setValue(lastFB.c_str());
@@ -1271,7 +1271,7 @@ void handleMessage(size_t len, uint8_t buf[]) {
         static String lastUnknown = "";
         if (result != lastUnknown) {
             lastUnknown = result;
-            logAdd('E', "Mesaj necunoscut: " + result.substring(0, 90));
+            logAdd('E', "Message inconnu : " + result.substring(0, 90));
         }
     }
 }
@@ -1296,12 +1296,12 @@ void sendCommand() {
         // Serial.println("Sending " + sendBuffer);
         byte byteArray[9] = {0};
         String head = sendBuffer.getHead();
-        if (headTries == 0) logAdd('T', "Trimit " + cmdName(head) + " " + head);
+        if (headTries == 0) logAdd('T', "Envoi " + cmdName(head) + " " + head);
         headTries++;
         hexCharacterStringToBytes(byteArray, head.c_str());
         tub.write(byteArray, sizeof(byteArray));
         if (digitalRead(PIN_5_PIN_DEF) != LOW) {
-            logAdd('E', "Pin 5 s-a schimbat în timpul trimiterii, " + cmdName(head) + " pierdută");
+            logAdd('E', "Broche 5 changée pendant l'envoi, " + cmdName(head) + " perdue");
             delayTime = DELAY_TIME_DEFAULT;
             dropHead();
         }

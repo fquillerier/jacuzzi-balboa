@@ -1,6 +1,6 @@
 // Online update from the GitHub releases of this project.
 // The page (on the phone) asks the GitHub API for the newest release, shows what changed, and on
-// "Instalează" sends the ESP32 the download link and the SHA-256 of the file. The ESP32 downloads the
+// "Installer" sends the ESP32 the download link and the SHA-256 of the file. The ESP32 downloads the
 // file itself, checks the SHA-256 and only then switches to the new firmware. If anything fails it
 // keeps running the current version (the new one is written to the other half of the flash).
 //
@@ -13,7 +13,7 @@
 #include <Update.h>
 #include <mbedtls/sha256.h>
 
-#define OTA_URL_PREFIX "https://github.com/zaiclopz/jacuzzi-balboa/releases/download/"
+#define OTA_URL_PREFIX "https://github.com/fquillerier/jacuzzi-balboa/releases/download/"
 
 volatile int otaPct = -1;        // -1 idle, 0..100 while downloading
 char otaState[96] = "";          // "", "download", "error: ...", "done" (char array: written by the update task, read by the page)
@@ -37,12 +37,12 @@ int versionCmp(const String& a, const String& b) {
 void otaFail(const String& why) {
   strlcpy(otaState, ("error: " + why).c_str(), sizeof(otaState));
   otaPct = -1;
-  logAdd('E', "Update online eșuat: " + why);
+  logAdd('E', "Mise à jour en ligne échouée : " + why);
   attachPanelInterrupt();
 }
 
 void otaRun(void* arg) {
-  logAdd('S', "Update online: descarc " + otaVer);
+  logAdd('S', "Mise à jour en ligne : téléchargement " + otaVer);
   detachInterrupt(digitalPinToInterrupt(PIN_5_PIN_DEF));  // as for the local update: no pin 5 work while writing flash
 
   WiFiClientSecure client;
@@ -54,21 +54,21 @@ void otaRun(void* arg) {
   bool ok = false;
   do {
     if (!http.begin(client, otaUrl)) {
-      otaFail("nu pot deschide adresa");
+      otaFail("impossible d'ouvrir l'adresse");
       break;
     }
     int code = http.GET();
     if (code != 200) {
-      otaFail("GitHub a răspuns " + String(code));
+      otaFail("GitHub a répondu " + String(code));
       break;
     }
     int len = http.getSize();
     if (len <= 0) {
-      otaFail("mărime necunoscută");
+      otaFail("taille inconnue");
       break;
     }
     if (!Update.begin(len, U_FLASH)) {
-      otaFail("nu e loc pentru " + String(len) + " octeți");
+      otaFail("pas de place pour " + String(len) + " octets");
       break;
     }
     mbedtls_sha256_context sha;
@@ -87,7 +87,7 @@ void otaRun(void* arg) {
         mbedtls_sha256_update(&sha, buf, n);
         if (Update.write(buf, n) != (size_t)n) {
           streamOk = false;
-          otaFail("scriere în flash eșuată");
+          otaFail("écriture en mémoire flash échouée");
           break;
         }
         done += n;
@@ -96,7 +96,7 @@ void otaRun(void* arg) {
       } else {
         if (!http.connected() || millis() - lastData > 20000) {
           streamOk = false;
-          otaFail("descărcare întreruptă la " + String(otaPct) + "%");
+          otaFail("téléchargement interrompu à " + String(otaPct) + "%");
           break;
         }
         delay(5);
@@ -116,11 +116,11 @@ void otaRun(void* arg) {
     }
     if (hex != otaSha) {
       Update.abort();
-      otaFail("fișier corupt (SHA-256 diferit)");
+      otaFail("fichier corrompu (SHA-256 différent)");
       break;
     }
     if (!Update.end(true)) {
-      otaFail("verificare eșuată (" + String(Update.errorString()) + ")");
+      otaFail("vérification échouée (" + String(Update.errorString()) + ")");
       break;
     }
     ok = true;
@@ -171,10 +171,10 @@ void handleApiOta() {
   otaVer = ver;
   strlcpy(otaState, "download", sizeof(otaState));
   otaPct = 0;
-  logAdd('W', "Pagina: update online la " + ver);
+  logAdd('W', "Page : mise à jour en ligne vers " + ver);
   if (xTaskCreatePinnedToCore(otaRun, "otaOnline", 16384, NULL, 1, &otaTask, 0) != pdPASS) {
     otaTask = NULL;
-    strlcpy(otaState, "error: nu pot porni", sizeof(otaState));
+    strlcpy(otaState, "error: démarrage impossible", sizeof(otaState));
     otaPct = -1;
     sendApiResult(false, "no task");
     return;

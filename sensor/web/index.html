@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="ro">
+<html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0e7490">
-<title>Jacuzzi</title>
+<title>Spa</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Jacuzzi" id="appTitle">
+<meta name="apple-mobile-web-app-title" content="Spa" id="appTitle">
 <style>
 :root{--bg:#f3f5f7;--card:#ffffff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#0e7490;--accent-bg:#e0f2f7;--on:#0e7490;--warm:#c2410c;--warm-bg:#fff1e8;--warn:#92400e;--warn-bg:#fef3c7;--ok:#15803d}
 @media (prefers-color-scheme:dark){:root{--bg:#0b1117;--card:#151d26;--text:#e5edf5;--muted:#8fa1b3;--line:#253241;--accent:#38bdf8;--accent-bg:#0c2a38;--on:#38bdf8;--warm:#fb923c;--warm-bg:#3a1d0c;--warn:#fbbf24;--warn-bg:#3a2a07;--ok:#4ade80}}
@@ -98,19 +98,19 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
 <body>
 <main>
   <header>
-    <h1 id="title">Jacuzzi</h1>
-    <div class="conn"><span id="spaTime"></span><span class="dot" id="dot"></span><span id="connTxt">Se conectează</span></div>
+    <h1 id="title">Spa</h1>
+    <div class="conn"><span id="spaTime"></span><span class="dot" id="dot"></span><span id="connTxt">Connexion…</span></div>
   </header>
 
-  <div class="banner" id="noPanel">Nu primesc date de la jacuzzi. Verifică legătura la pinul 5 și cablul RS485.</div>
+  <div class="banner" id="noPanel">Aucune donnée reçue du spa. Vérifiez le fil de la broche 5 et le câble RS485.</div>
 
   <section class="card">
     <div class="temp">
       <div>
-        <div class="label">Temperatura apei</div>
+        <div class="label">Température de l'eau</div>
         <div class="big"><span id="temp">--</span><small>°C</small></div>
       </div>
-      <span class="badge" id="heater">Încălzire oprită</span>
+      <span class="badge" id="heater">Chauffe arrêtée</span>
     </div>
     <div class="sub" id="ttt"></div>
     <div class="wx hide" id="wx"><span class="wxi" id="wxIcon"></span><span id="wxTxt"></span></div>
@@ -118,101 +118,101 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
 
 
   <section class="card">
-    <div class="label">Temperatura dorită</div>
+    <div class="label">Consigne</div>
     <div class="target">
       <div class="tval" id="target">--</div>
       <div class="stepper">
-        <button class="round" id="minus" aria-label="Scade temperatura">&minus;</button>
-        <button class="round" id="plus" aria-label="Crește temperatura">+</button>
+        <button class="round" id="minus" aria-label="Baisser la consigne">&minus;</button>
+        <button class="round" id="plus" aria-label="Monter la consigne">+</button>
       </div>
     </div>
     <div class="sub" id="targetHint"></div>
   </section>
 
   <div class="grid" id="tiles">
-    <button class="tile" id="jet1"><span class="name">Jeturi 1</span><span class="st">Oprit</span></button>
-    <button class="tile" id="jet2"><span class="name">Jeturi 2</span><span class="st">Oprit</span></button>
-    <button class="tile" id="aux"><span class="name">Bule</span><span class="st">Pornire / oprire</span></button>
-    <button class="tile" id="light"><span class="name">Lumină</span><span class="st">Stinsă</span></button>
+    <button class="tile" id="jet1"><span class="name">Pompe 1</span><span class="st">Arrêtée</span></button>
+    <button class="tile" id="jet2"><span class="name">Pompe 2</span><span class="st">Arrêtée</span></button>
+    <button class="tile" id="aux"><span class="name">Blower</span><span class="st">Marche / arrêt</span></button>
+    <button class="tile" id="light"><span class="name">Éclairage</span><span class="st">Éteint</span></button>
   </div>
 
   <section class="card" id="modeCard">
-    <div class="label" id="modeLabel">Mod de funcționare</div>
+    <div class="label" id="modeLabel">Mode de chauffe</div>
     <div class="seg" id="modes">
       <button data-m="0">Standard</button>
-      <button data-m="1">Economic</button>
-      <button data-m="2">Somn</button>
+      <button data-m="1">Économie</button>
+      <button data-m="2">Veille</button>
     </div>
     <div class="state" id="state"></div>
   </section>
 
   <section class="card" id="graphCard">
-    <div class="label" id="graphLabel">Istoric temperatură</div>
-    <svg class="chart" id="chart" viewBox="0 0 320 140" role="img" aria-label="Temperatura apei în ultimele 24 de ore"></svg>
+    <div class="label" id="graphLabel">Historique de température</div>
+    <svg class="chart" id="chart" viewBox="0 0 320 140" role="img" aria-label="Température de l'eau sur les dernières 24 heures"></svg>
     <div class="sub" id="histHint"></div>
   </section>
 
   <section class="card err hide" id="errCard">
-    <div class="label">Cod de eroare</div>
+    <div class="label">Code d'erreur</div>
     <div class="errcode" id="errCode"></div>
     <div class="errtxt" id="errTxt"></div>
   </section>
 
   <details>
-    <summary>Setări și informații<span id="updDot" class="hide" style="color:var(--accent);font-weight:600"> · actualizare disponibilă</span></summary>
+    <summary>Réglages et informations<span id="updDot" class="hide" style="color:var(--accent);font-weight:600"> · mise à jour disponible</span></summary>
     <section class="card">
-      <div class="label">Personalizare</div>
-      <label class="fld">Numele afișat sus<input type="text" id="cfgTitle" maxlength="30" autocomplete="off"></label>
-      <label class="fld">Localitatea (pentru temperatura de afară)<input type="text" id="cfgLoc" maxlength="40" autocomplete="off" placeholder="de exemplu Brașov"></label>
+      <div class="label">Personnalisation</div>
+      <label class="fld">Nom affiché en haut<input type="text" id="cfgTitle" maxlength="30" autocomplete="off"></label>
+      <label class="fld">Ville (pour la température extérieure)<input type="text" id="cfgLoc" maxlength="40" autocomplete="off" placeholder="par exemple Annecy"></label>
       <div class="small" id="cfgLocHint" style="margin:-6px 0 12px"></div>
-      <div class="small">Funcții afișate (debifează ce nu folosești) și numele lor:</div>
+      <div class="small">Fonctions affichées (décochez celles que vous n'utilisez pas) et leur nom :</div>
       <div id="cfgRows"></div>
-      <div class="frow"><input type="checkbox" id="cfgErr"><label for="cfgErr" style="font-size:15px">Coduri eroare <span class="small">(afișează sub grafic erorile raportate de jacuzzi)</span></label></div>
-      <button class="btn primary" id="cfgSave">Salvează</button>
-      <p class="small">Setările se salvează în modul și apar la fel pe toate telefoanele.</p>
-      <p class="small">Iconiță pe ecranul telefonului: pe Android, în Chrome, meniul ⋮ → „Adaugă pe ecranul de pornire”. Pe iPhone, în Safari, butonul Partajare → „Adaugă pe ecranul principal”.</p>
+      <div class="frow"><input type="checkbox" id="cfgErr"><label for="cfgErr" style="font-size:15px">Codes d'erreur <span class="small">(affiche sous le graphique les erreurs signalées par le spa)</span></label></div>
+      <button class="btn primary" id="cfgSave">Enregistrer</button>
+      <p class="small">Les réglages sont enregistrés dans le module et s'appliquent à tous les téléphones.</p>
+      <p class="small">Icône sur l'écran du téléphone : sur Android, dans Chrome, menu ⋮ → « Ajouter à l'écran d'accueil ». Sur iPhone, dans Safari, bouton Partager → « Sur l'écran d'accueil ».</p>
     </section>
     <section class="card">
       <div class="kv"><span>Firmware</span><span id="fw">-</span></div>
-      <div class="kv"><span>Pornit de</span><span id="uptime">-</span></div>
+      <div class="kv"><span>Allumé depuis</span><span id="uptime">-</span></div>
       <div class="kv"><span>Home Assistant (MQTT)</span><span id="mqtt">-</span></div>
-      <div class="kv"><span>Comenzi în așteptare</span><span id="queue">0</span></div>
-      <div class="kv"><span>Ultima repornire</span><span id="boot">-</span></div>
-      <div class="kv"><span>Reporniri</span><span id="boots">-</span></div>
-      <div class="kv"><span>Actualizare online</span><span id="updTxt">-</span></div>
+      <div class="kv"><span>Commandes en attente</span><span id="queue">0</span></div>
+      <div class="kv"><span>Dernier redémarrage</span><span id="boot">-</span></div>
+      <div class="kv"><span>Redémarrages</span><span id="boots">-</span></div>
+      <div class="kv"><span>Mise à jour en ligne</span><span id="updTxt">-</span></div>
       <div id="updNotes" class="small hide" style="white-space:pre-wrap;margin-top:8px;padding:10px;background:var(--bg);border-radius:10px"></div>
-      <button class="btn" id="updCheck">Verifică actualizări</button>
-      <button class="btn primary hide" id="updInstall">Instalează</button>
-      <a class="btn" id="otaLink" href="#">Update manual (fișier)</a>
-      <a class="btn" href="/raw">Pagina veche</a>
-      <button class="btn" id="qClear">Golește coada</button>
-      <button class="btn" id="restart">Repornește modulul</button>
-      <button class="btn danger" id="wifiReset">Schimbă rețeaua WiFi</button>
-      <p class="small">„Schimbă rețeaua WiFi” șterge rețeaua salvată. Modulul pornește apoi hotspot-ul „Jacuzzi-Setup”, la care te conectezi de pe telefon ca să alegi rețeaua nouă.</p>
+      <button class="btn" id="updCheck">Rechercher une mise à jour</button>
+      <button class="btn primary hide" id="updInstall">Installer</button>
+      <a class="btn" id="otaLink" href="#">Mise à jour manuelle (fichier)</a>
+      <a class="btn" href="/raw">Ancienne page</a>
+      <button class="btn" id="qClear">Vider la file d'attente</button>
+      <button class="btn" id="restart">Redémarrer le module</button>
+      <button class="btn danger" id="wifiReset">Changer de réseau Wi-Fi</button>
+      <p class="small">« Changer de réseau Wi-Fi » efface le réseau enregistré. Le module ouvre alors le point d'accès « Jacuzzi-Setup » : connectez-y votre téléphone pour choisir le nouveau réseau.</p>
     </section>
   </details>
 
   <details id="logBox">
-    <summary>Jurnal (depanare)</summary>
+    <summary>Journal (dépannage)</summary>
     <section class="card">
-      <div class="frow"><input type="checkbox" id="sniff"><label for="sniff" style="font-size:15px">Captează butoanele panoului fizic</label></div>
-      <p class="small" style="margin:2px 0 8px">Bifează, apasă un buton pe panoul jacuzzi-ului, apoi scrie mai jos ce ai apăsat. Codul apare în jurnal cu „P”.</p>
-      <div class="lrow"><input type="text" id="note" maxlength="100" placeholder="am apăsat Jet o dată" autocomplete="off"><button class="btn sm" id="noteAdd" style="margin:0">Adaugă notă</button></div>
+      <div class="frow"><input type="checkbox" id="sniff"><label for="sniff" style="font-size:15px">Capturer les touches du clavier du spa</label></div>
+      <p class="small" style="margin:2px 0 8px">Cochez, appuyez sur une touche du clavier du spa, puis notez ci-dessous ce que vous avez pressé. Le code apparaît dans le journal avec la lettre « P ».</p>
+      <div class="lrow"><input type="text" id="note" maxlength="100" placeholder="appui une fois sur Jets 3" autocomplete="off"><button class="btn sm" id="noteAdd" style="margin:0">Ajouter la note</button></div>
       <div class="lrow">
-        <select id="lf" aria-label="Filtru">
-          <option value="">Toate</option>
-          <option value="TWP">Comenzi și panou</option>
-          <option value="PM">Panou fizic și note</option>
-          <option value="E">Doar erori</option>
-          <option value="RM">Mesaje de la jacuzzi</option>
+        <select id="lf" aria-label="Filtre">
+          <option value="">Tout</option>
+          <option value="TWP">Commandes et clavier</option>
+          <option value="PM">Clavier et notes</option>
+          <option value="E">Erreurs seulement</option>
+          <option value="RM">Messages du spa</option>
         </select>
       </div>
-      <button class="btn sm" id="lPause">Pauză</button>
-      <button class="btn sm" id="lCopy">Copiază</button>
-      <button class="btn sm" id="lExport">Exportă fișier</button>
-      <button class="btn sm" id="lClear">Golește</button>
-      <div class="small" style="margin-top:8px">Jurnalul rămâne după repornire. După o pană de curent rămân ultimele aproximativ 40 de linii.</div>
-      <div class="small" style="margin-top:4px">R primit · T trimis · P panou fizic · W din pagină · S sistem · E eroare · M notă</div>
+      <button class="btn sm" id="lPause">Pause</button>
+      <button class="btn sm" id="lCopy">Copier</button>
+      <button class="btn sm" id="lExport">Exporter</button>
+      <button class="btn sm" id="lClear">Vider</button>
+      <div class="small" style="margin-top:8px">Le journal est conservé après un redémarrage. Après une coupure de courant, seules les 40 dernières lignes environ restent.</div>
+      <div class="small" style="margin-top:4px">R reçu · T envoyé · P clavier du spa · W depuis la page · S système · E erreur · M note</div>
       <div class="log" id="log"></div>
     </section>
   </details>
@@ -224,8 +224,8 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   var $ = function(id){ return document.getElementById(id); };
   var S = {};
   var desired = null, desiredTimer = null, lastMsg = 0, ws = null, pollTimer = null;
-  var MODE_NAMES = ['Standard','Economic','Somn'];
-  var STATE_RO = {'Standard':'Standard','Economy':'Economic','Sleep':'Somn','Circulation':'Circulație','Circulation in sleep':'Circulație (somn)','Cleaning':'Curățare','Std in Eco':'Standard temporar (din Economic)','Set Mode':'Se schimbă modul','Set Temperature':'Se setează temperatura','Temp Up':'Temperatură +','Temp Down':'Temperatură −','Standby?':'Standby','unknown':'Necunoscută','Panel select (pin5) not detected':'Pinul 5 nu e detectat'};
+  var MODE_NAMES = ['Standard','Économie','Veille'];
+  var STATE_FR = {'Standard':'Standard','Economy':'Économie','Sleep':'Veille','Circulation':'Circulation','Circulation in sleep':'Circulation (veille)','Cleaning':'Nettoyage','Std in Eco':'Standard temporaire (depuis Économie)','Set Mode':'Changement de mode','Set Temperature':'Réglage de la consigne','Temp Up':'Consigne +','Temp Down':'Consigne −','Standby?':'Arrêt temporaire','unknown':'Inconnu','Panel select (pin5) not detected':'Broche 5 non détectée'};
 
   function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(function(){el.classList.remove('show');},2200); }
 
@@ -234,23 +234,23 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   }
 
   function fmtTemp(v){ var n=parseFloat(v); return (isNaN(n)||n<0)?null:n; }
-  function fmtUptime(s){ s=parseInt(s||0,10); var d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60); return (d?d+' z ':'')+h+' h '+m+' min'; }
+  function fmtUptime(s){ s=parseInt(s||0,10); var d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60); return (d?d+' j ':'')+h+' h '+m+' min'; }
 
   function render(){
     var t=fmtTemp(S.temp);
     $('temp').textContent = t===null ? '--' : t.toFixed(1);
     var heat = !!S.heater;
-    var hb=$('heater'); hb.textContent = heat ? 'Încălzește' : 'Încălzire oprită'; hb.className = 'badge'+(heat?' heat':'');
+    var hb=$('heater'); hb.textContent = heat ? 'Chauffe' : 'Chauffe arrêtée'; hb.className = 'badge'+(heat?' heat':'');
     var ttt = parseInt(S.timeToTemp||0,10);
-    $('ttt').textContent = (heat && ttt>0) ? ('Gata în aproximativ '+(ttt>=60? Math.floor(ttt/60)+' h '+(ttt%60)+' min' : ttt+' min')) : '';
+    $('ttt').textContent = (heat && ttt>0) ? ('Prêt dans environ '+(ttt>=60? Math.floor(ttt/60)+' h '+(ttt%60)+' min' : ttt+' min')) : '';
 
     var tgt=fmtTemp(S.target);
     if (desired!==null){
       $('target').textContent = desired.toFixed(1)+' °C'; $('target').className='tval pending';
-      $('targetHint').textContent='Se trimite…';
+      $('targetHint').textContent='Envoi…';
     } else if (tgt===null){
       $('target').textContent='--'; $('target').className='tval';
-      $('targetHint').textContent='Necunoscută. Apasă + sau − o dată ca să o citesc din jacuzzi.';
+      $('targetHint').textContent='Inconnue. Appuyez une fois sur + ou − pour la lire dans le spa.';
     } else {
       $('target').textContent = tgt.toFixed(1)+' °C'; $('target').className='tval';
       $('targetHint').textContent='';
@@ -258,18 +258,18 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
 
     setTile('jet1', lvl(S.p1l,S.pump1)>0, lvlTxt(lvl(S.p1l,S.pump1)));
     setTile('jet2', lvl(S.p2l,S.pump2)>0, lvlTxt(lvl(S.p2l,S.pump2)));
-    setTile('light', !!S.light, S.light?'Aprinsă':'Stinsă');
+    setTile('light', !!S.light, S.light?'Allumé':'Éteint');
 
     var m = parseInt(S.mode,10);
     var btns=$('modes').querySelectorAll('button');
     for (var i=0;i<btns.length;i++){ btns[i].classList.toggle('sel', parseInt(btns[i].getAttribute('data-m'),10)===m); }
-    $('state').textContent = S.state ? ('Stare: '+(STATE_RO[S.state]||S.state)) : '';
+    $('state').textContent = S.state ? ('État : '+(STATE_FR[S.state]||S.state)) : '';
 
     $('noPanel').classList.toggle('show', S.panel===false);
     $('spaTime').textContent = (S.time && S.time!=='--:--') ? S.time : '';
     $('fw').textContent = S.fw || '-';
     $('uptime').textContent = fmtUptime(S.uptime);
-    $('mqtt').textContent = S.mqtt ? 'Activ' : 'Dezactivat';
+    $('mqtt').textContent = S.mqtt ? 'Actif' : 'Désactivé';
     var q=parseInt(S.queue||0,10); $('queue').textContent=q;
     $('boot').textContent = S.boot || '-';
     $('boots').textContent = S.boots || '-';
@@ -279,7 +279,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   }
 
   function lvl(l,p){ var n=parseInt(l,10); return isNaN(n) ? (p>0?1:0) : n; }
-  function lvlTxt(n){ return n===2 ? 'Treapta 2' : (n===1 ? 'Treapta 1' : 'Oprite'); }
+  function lvlTxt(n){ return n===2 ? 'Vitesse 2' : (n===1 ? 'Vitesse 1' : 'Arrêtée'); }
   function setTile(id,on,txt){ var el=$(id); el.classList.toggle('on',on); el.querySelector('.st').textContent=txt; }
 
   var lastFw=null;
@@ -289,7 +289,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   }
 
   // ---- online update from the GitHub releases ----
-  var UPD=null, REPO_API='https://api.github.com/repos/zaiclopz/jacuzzi-balboa/releases/latest';
+  var UPD=null, REPO_API='https://api.github.com/repos/fquillerier/jacuzzi-balboa/releases/latest';
   function cmpVer(a,b){ a=String(a).split('.'); b=String(b).split('.'); for(var i=0;i<4;i++){ var x=parseInt(a[i]||0,10), y=parseInt(b[i]||0,10); if(x!==y) return x<y?-1:1; } return 0; }
   function showUpd(txt,notes,canInstall){
     $('updTxt').textContent=txt;
@@ -298,37 +298,37 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     $('updDot').classList.toggle('hide',!canInstall);
   }
   function checkUpdate(manual){
-    if(manual) $('updTxt').textContent='Verific…';
+    if(manual) $('updTxt').textContent='Vérification…';
     fetch(REPO_API,{cache:'no-store'}).then(function(r){ if(!r.ok) throw r.status; return r.json(); }).then(function(d){
       var ver=String(d.tag_name||'').replace(/^v/,'');
       var a=(d.assets||[]).filter(function(x){ return x.name==='jacuzzi-update.bin'; })[0];
       var m=String(d.body||'').match(/sha256:\s*([0-9a-f]{64})/i);
       var sha=(a && a.digest && a.digest.indexOf('sha256:')===0) ? a.digest.slice(7) : (m?m[1]:'');
-      if(!ver || !a || !sha){ UPD=null; showUpd('Nu găsesc fișierul de actualizare','',false); return; }
-      if(cmpVer(ver,S.fw||'0')<=0){ UPD=null; showUpd('Ai ultima versiune ('+(S.fw||ver)+')','',false); return; }
+      if(!ver || !a || !sha){ UPD=null; showUpd('Fichier de mise à jour introuvable','',false); return; }
+      if(cmpVer(ver,S.fw||'0')<=0){ UPD=null; showUpd('Vous avez la dernière version ('+(S.fw||ver)+')','',false); return; }
       UPD={ver:ver, url:a.browser_download_url, sha:sha.toLowerCase()};
       var notes=String(d.body||'').replace(/^.*sha256:.*$/gim,'').replace(/\r/g,'').trim();
-      showUpd('Versiune nouă: '+ver+' (ai '+(S.fw||'-')+')', notes, true);
-    }).catch(function(){ if(manual) showUpd('Nu pot contacta GitHub. Telefonul are internet?','',false); });
+      showUpd('Nouvelle version : '+ver+' (installée : '+(S.fw||'-')+')', notes, true);
+    }).catch(function(){ if(manual) showUpd('Impossible de joindre GitHub. Le téléphone a-t-il accès à Internet ?','',false); });
   }
-  var OTA_ERR={'busy':'Se trimit comenzi, mai încearcă peste câteva secunde','not newer':'Versiunea nu e mai nouă','already running':'Actualizarea rulează deja','bad url':'Adresă greșită','bad sha':'Lipsește verificarea fișierului'};
+  var OTA_ERR={'busy':'Des commandes sont en cours d\'envoi, réessayez dans quelques secondes','not newer':'Cette version n\'est pas plus récente','already running':'La mise à jour est déjà en cours','bad url':'Adresse incorrecte','bad sha':'Empreinte du fichier manquante'};
   function renderOta(){
     var st=S.ota||'';
-    if(st==='download'){ $('updTxt').textContent='Se descarcă '+(S.otaPct>=0?S.otaPct:0)+'%'; $('updInstall').classList.add('hide'); }
-    else if(st==='done'){ $('updTxt').textContent='Instalat, modulul repornește…'; $('updInstall').classList.add('hide'); }
-    else if(st.indexOf('error:')===0 && UPD){ $('updTxt').textContent='Eroare: '+st.slice(6).trim(); $('updInstall').classList.remove('hide'); }
+    if(st==='download'){ $('updTxt').textContent='Téléchargement '+(S.otaPct>=0?S.otaPct:0)+'%'; $('updInstall').classList.add('hide'); }
+    else if(st==='done'){ $('updTxt').textContent='Installée, le module redémarre…'; $('updInstall').classList.add('hide'); }
+    else if(st.indexOf('error:')===0 && UPD){ $('updTxt').textContent='Erreur : '+st.slice(6).trim(); $('updInstall').classList.remove('hide'); }
   }
   $('updCheck').onclick=function(){ checkUpdate(true); };
   $('updInstall').onclick=function(){
     if(!UPD) return;
-    if(!confirm('Instalez versiunea '+UPD.ver+'? Durează cam un minut, apoi modulul repornește singur.')) return;
+    if(!confirm('Installer la version '+UPD.ver+' ? Cela prend environ une minute, puis le module redémarre tout seul.')) return;
     post('/api/ota?url='+encodeURIComponent(UPD.url)+'&sha='+UPD.sha+'&ver='+encodeURIComponent(UPD.ver)).then(function(r){
-      if(r.ok){ toast('Descarc actualizarea…'); $('updInstall').classList.add('hide'); }
-      else toast(OTA_ERR[r.msg]||'Actualizarea nu a pornit');
+      if(r.ok){ toast('Téléchargement de la mise à jour…'); $('updInstall').classList.add('hide'); }
+      else toast(OTA_ERR[r.msg]||'La mise à jour n\'a pas démarré');
     });
   };
 
-  function setConn(live){ $('dot').className='dot'+(live?' live':''); $('connTxt').textContent= live?'Conectat':'Fără legătură'; }
+  function setConn(live){ $('dot').className='dot'+(live?' live':''); $('connTxt').textContent= live?'Connecté':'Hors ligne'; }
 
   function connectWs(){
     try { ws = new WebSocket('ws://'+location.hostname+':81'); } catch(e){ startPoll(); return; }
@@ -343,13 +343,13 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   setInterval(function(){ if(Date.now()-lastMsg>20000) setConn(false); },5000);
 
   function cmd(a, label){
-    api('/api/cmd?a='+a).then(function(r){ toast(r.ok ? label : r.msg==='nopanel' ? 'Pinul 5 nu e conectat, comenzile sunt oprite' : (r.msg==='busy'?'Se trimit încă comenzi, mai încearcă':'Comanda nu a mers')); });
+    api('/api/cmd?a='+a).then(function(r){ toast(r.ok ? label : r.msg==='nopanel' ? 'Broche 5 non connectée, commandes désactivées' : (r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'La commande a échoué')); });
   }
 
   function step(delta){
     var tgt=fmtTemp(S.target);
     if (tgt===null && desired===null){
-      api('/api/cmd?a=up').then(function(r){ toast(r.msg==='nopanel' ? 'Pinul 5 nu e conectat, comenzile sunt oprite' : 'Citesc temperatura setată…'); });
+      api('/api/cmd?a=up').then(function(r){ toast(r.msg==='nopanel' ? 'Broche 5 non connectée, commandes désactivées' : 'Lecture de la consigne…'); });
       return;
     }
     var base = desired!==null ? desired : tgt;
@@ -360,7 +360,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
       var v=desired;
       api('/api/target?t='+v.toFixed(1)).then(function(r){
         desired=null; render();
-        toast(r.ok ? ('Setez '+v.toFixed(1)+' °C') : r.msg==='nopanel' ? 'Pinul 5 nu e conectat, comenzile sunt oprite' : (r.msg==='target unknown'?'Citesc temperatura setată, încearcă din nou':'Nu am putut seta temperatura'));
+        toast(r.ok ? ('Consigne '+v.toFixed(1)+' °C') : r.msg==='nopanel' ? 'Broche 5 non connectée, commandes désactivées' : (r.msg==='target unknown'?'Lecture de la consigne en cours, réessayez':'Impossible de régler la consigne'));
       });
     },1500);
   }
@@ -369,18 +369,18 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   $('minus').onclick=function(){ step(-0.5); };
   ['jet1','jet2','aux','light'].forEach(function(k){ $(k).onclick=function(){ cmd(k, featName(k)); }; });
   var mb=$('modes').querySelectorAll('button');
-  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mod: '+MODE_NAMES[m]):r.msg==='mode unknown'?'Modul curent nu e cunoscut încă, mai încearcă peste câteva secunde':(r.msg==='nopanel'?'Pinul 5 nu e conectat, comenzile sunt oprite':'Nu am putut schimba modul')); }); }; }
+  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mode : '+MODE_NAMES[m]):r.msg==='mode unknown'?'Mode actuel encore inconnu, réessayez dans quelques secondes':(r.msg==='nopanel'?'Broche 5 non connectée, commandes désactivées':'Impossible de changer de mode')); }); }; }
   $('otaLink').href='http://'+location.hostname+':8080/update';
   $('wifiReset').onclick=function(){
-    if(!confirm('Ștergi rețeaua WiFi salvată? Modulul repornește în modul de configurare.')) return;
-    fetch('/api/wifireset',{method:'POST'}).then(function(){ toast('Repornesc. Conectează-te la „Jacuzzi-Setup”.'); });
+    if(!confirm('Effacer le réseau Wi-Fi enregistré ? Le module redémarre en mode configuration.')) return;
+    fetch('/api/wifireset',{method:'POST'}).then(function(){ toast('Redémarrage. Connectez-vous à « Jacuzzi-Setup ».'); });
   };
 
   function post(path){ return fetch(path,{method:'POST'}).then(function(r){ return r.json(); }).catch(function(){ return {ok:false}; }); }
-  $('qClear').onclick=function(){ post('/api/queue/clear').then(function(r){ toast(r.ok?('Coada golită ('+r.msg+')'):'Nu a mers'); }); };
+  $('qClear').onclick=function(){ post('/api/queue/clear').then(function(r){ toast(r.ok?('File vidée ('+r.msg+')'):'Échec'); }); };
   $('restart').onclick=function(){
-    if(!confirm('Repornești modulul? Durează aproximativ 10 secunde.')) return;
-    post('/api/restart').then(function(){ toast('Repornesc…'); });
+    if(!confirm('Redémarrer le module ? Cela prend environ 10 secondes.')) return;
+    post('/api/restart').then(function(){ toast('Redémarrage…'); });
   };
 
   // ---- debug log ----
@@ -398,7 +398,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
       var x=document.createElement('span'); x.textContent=l.text;
       d.appendChild(t); d.appendChild(y); d.appendChild(x);
       var m=l.ty==='P' && l.text.match(/fb06[0-9a-f]{14}/);
-      if(m){ var b=document.createElement('button'); b.className='btn sm'; b.textContent='Trimite'; b.onclick=function(){ sendHex(m[0]); }; d.appendChild(b); }
+      if(m){ var b=document.createElement('button'); b.className='btn sm'; b.textContent='Envoyer'; b.onclick=function(){ sendHex(m[0]); }; d.appendChild(b); }
       box.appendChild(d);
     });
     if(atBottom) box.scrollTop=box.scrollHeight;
@@ -425,38 +425,38 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     });
   }
   function sendHex(h){
-    if(!confirm('Trimit codul '+h+' la jacuzzi?')) return;
-    post('/api/sendhex?h='+h).then(function(r){ toast(r.ok?'Trimis':r.msg==='nopanel'?'Pinul 5 nu e conectat, comenzile sunt oprite':(r.msg==='busy'?'Coada e plină':'Cod greșit')); });
+    if(!confirm('Envoyer le code '+h+' au spa ?')) return;
+    post('/api/sendhex?h='+h).then(function(r){ toast(r.ok?'Envoyé':r.msg==='nopanel'?'Broche 5 non connectée, commandes désactivées':(r.msg==='busy'?'File d\'attente pleine':'Code incorrect')); });
   }
   $('logBox').addEventListener('toggle',function(){
     if($('logBox').open){ loadLog(); LG.timer=setInterval(loadLog,1500); } else { clearInterval(LG.timer); }
   });
   $('lf').onchange=renderLog;
-  $('lPause').onclick=function(){ LG.paused=!LG.paused; this.textContent=LG.paused?'Continuă':'Pauză'; if(!LG.paused) loadLog(); };
-  $('lClear').onclick=function(){ if(!confirm('Golești jurnalul?')) return; post('/api/log/clear').then(function(){ LG.lines=[]; renderLog(); loadLog(); }); };
+  $('lPause').onclick=function(){ LG.paused=!LG.paused; this.textContent=LG.paused?'Reprendre':'Pause'; if(!LG.paused) loadLog(); };
+  $('lClear').onclick=function(){ if(!confirm('Vider le journal ?')) return; post('/api/log/clear').then(function(){ LG.lines=[]; renderLog(); loadLog(); }); };
   function logText(St){
     if(!LG.lines.length) return '';
     var S=St||{};
-    var head=['Jurnal '+CFG.title+' · '+new Date().toLocaleString('ro-RO'),
-      'Firmware '+(S.fw||'-')+' · pornit de '+fmtUptime(S.uptime)+' · ultima repornire: '+(S.boot||'-')+' · reporniri: '+(S.boots||'-'),
-      'Pin 5: '+(S.panel?'detectat':'nedetectat')+(S.p5!==undefined?' ('+S.p5+' impulsuri/s)':'')+' · coadă: '+(S.queue||0)+' · stare: '+(S.state||'-')+' · apă '+(S.temp||'-')+' °C',
+    var head=['Journal '+CFG.title+' · '+new Date().toLocaleString('fr-FR'),
+      'Firmware '+(S.fw||'-')+' · allumé depuis '+fmtUptime(S.uptime)+' · dernier redémarrage : '+(S.boot||'-')+' · redémarrages : '+(S.boots||'-'),
+      'Broche 5 : '+(S.panel?'détectée':'non détectée')+(S.p5!==undefined?' ('+S.p5+' impulsions/s)':'')+' · file : '+(S.queue||0)+' · état : '+(S.state||'-')+' · eau '+(S.temp||'-')+' °C',
       ''];
     return head.concat(LG.lines.map(function(l){ return l.when+' '+l.ty+' '+l.text; })).join('\n')+'\n';
   }
   function fresh(){ return api('/api/status').then(function(r){ return (r&&r.data)||S; }); }
   $('lExport').onclick=function(){ fresh().then(function(St){
     var txt=logText(St);
-    if(!txt){ toast('Jurnalul e gol'); return; }
-    var d=new Date(), name='jurnal-jacuzzi-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.txt';
+    if(!txt){ toast('Le journal est vide'); return; }
+    var d=new Date(), name='journal-spa-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.txt';
     var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'})); a.download=name;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(a.href); },5000);
-    toast('Salvat '+name);
+    toast('Enregistré : '+name);
   }); };
   $('lCopy').onclick=function(){ (function(St){  // stays synchronous: phones only allow copying right after the tap
     var txt=logText(St);
-    if(!txt){ toast('Jurnalul e gol'); return; }
-    var done=function(){ toast('Copiat'); };
+    if(!txt){ toast('Le journal est vide'); return; }
+    var done=function(){ toast('Copié'); };
     if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(txt).then(done,function(){ fallbackCopy(txt); }); }
     else fallbackCopy(txt);
   })(S); };
@@ -464,28 +464,28 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     var ta=document.createElement('textarea'); ta.value=txt; ta.setAttribute('readonly',''); ta.style.position='absolute'; ta.style.left='-9999px';
     document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0,txt.length);
     var ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
-    document.body.removeChild(ta); toast(ok?'Copiat':'Nu am putut copia');
+    document.body.removeChild(ta); toast(ok?'Copié':'Copie impossible');
   }
   $('noteAdd').onclick=function(){
     var t=$('note').value.trim();
-    if(!t){ toast('Scrie ce ai apăsat'); $('note').focus(); return; }
+    if(!t){ toast('Notez la touche pressée'); $('note').focus(); return; }
     fetch('/api/log/note',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'t='+encodeURIComponent(t)})
       .then(function(){ $('note').value=''; loadLog(); });
   };
   $('note').addEventListener('keydown',function(e){ if(e.key==='Enter') $('noteAdd').onclick(); });
-  $('sniff').onchange=function(){ var on=this.checked; post('/api/log/sniff?on='+(on?1:0)).then(function(r){ toast(r.ok?(on?'Captare pornită':'Captare oprită'):'Nu a mers'); loadLog(); }); };
+  $('sniff').onchange=function(){ var on=this.checked; post('/api/log/sniff?on='+(on?1:0)).then(function(r){ toast(r.ok?(on?'Capture activée':'Capture arrêtée'):'Échec'); loadLog(); }); };
 
   // ---- page settings (stored on the module, same on every phone) ----
   var FEATS=[
-    {k:'weather', def:'Temperatura afară'},
-    {k:'jet1',  def:'Jeturi 1'},
-    {k:'jet2',  def:'Jeturi 2'},
-    {k:'aux',   def:'Bule'},
-    {k:'light', def:'Lumină'},
-    {k:'mode',  def:'Mod de funcționare'},
-    {k:'graph', def:'Istoric temperatură'}
+    {k:'weather', def:'Température extérieure'},
+    {k:'jet1',  def:'Pompe 1'},
+    {k:'jet2',  def:'Pompe 2'},
+    {k:'aux',   def:'Blower'},
+    {k:'light', def:'Éclairage'},
+    {k:'mode',  def:'Mode de chauffe'},
+    {k:'graph', def:'Historique de température'}
   ];
-  var CFG={title:'Jacuzzi', f:{}, loc:null, err:false};
+  var CFG={title:'Spa', f:{}, loc:null, err:false};
   function feat(k){ var f=CFG.f[k]||{}; var d=FEATS.filter(function(x){return x.k===k;})[0]; return {n:(f.n&&String(f.n).trim())||d.def, v:f.v!==0}; }
   function featName(k){ return feat(k).n; }
 
@@ -507,20 +507,20 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
 
   // ---- error codes from the panel display (Balboa GL/EL systems) ----
   var ERR_CODES=[
-    {c:['OHH','HH'], s:'stop', t:'Supraîncălzire la încălzitor (în jur de 48 °C). Jacuzzi-ul s-a oprit. Nu intra în apă.'},
-    {c:['OHS','OH'], s:'stop', t:'Supraîncălzire a apei (în jur de 43 °C). Jacuzzi-ul s-a oprit. Nu intra în apă.'},
-    {c:['SNA','SA'], s:'stop', t:'Senzorul de temperatură A nu funcționează. Jacuzzi-ul e oprit.'},
-    {c:['SNB','SB'], s:'stop', t:'Senzorul de temperatură B nu funcționează. Jacuzzi-ul e oprit.'},
-    {c:['DY','DRY'], s:'stop', t:'Apă insuficientă în încălzitor. Verifică nivelul apei și filtrul.'},
-    {c:['LF'], s:'stop', t:'Debit scăzut persistent. Încălzitorul e oprit; restul funcțiilor merg. Verifică filtrul și nivelul apei.'},
-    {c:['FLO','FL'], s:'warn', t:'Problemă de debit sau la senzorul de presiune. Verifică filtrul și nivelul apei.'},
-    {c:['HFL','HL'], s:'warn', t:'Diferență mare între senzorii de temperatură; posibil debit slab (filtru murdar sau aer în circuit).'},
-    {c:['SN','SNS'], s:'warn', t:'Senzorii de temperatură dau valori diferite între ei.'},
-    {c:['DR'], s:'warn', t:'Posibil apă insuficientă în încălzitor. Jacuzzi-ul retestează în scurt timp.'},
-    {c:['ICE','IC'], s:'info', t:'Pericol de îngheț. Pompele pornesc automat ca să protejeze instalația.'},
-    {c:['COOL','COL'], s:'info', t:'Apa e mult sub temperatura setată.'},
-    {c:['PR'], s:'info', t:'Mod de amorsare după pornire. Durează câteva minute.'},
-    {c:['--','---','----','--C','--F'], s:'info', t:'Temperatura nu e disponibilă încă (pornire sau amorsare).'}
+    {c:['OHH','HH'], s:'stop', t:'Surchauffe du réchauffeur (environ 48 °C). Le spa s\'est arrêté. N\'entrez pas dans l\'eau.'},
+    {c:['OHS','OH'], s:'stop', t:'Surchauffe de l\'eau (environ 43 °C). Le spa s\'est arrêté. N\'entrez pas dans l\'eau.'},
+    {c:['SNA','SA'], s:'stop', t:'La sonde de température A ne fonctionne pas. Le spa est arrêté.'},
+    {c:['SNB','SB'], s:'stop', t:'La sonde de température B ne fonctionne pas. Le spa est arrêté.'},
+    {c:['DY','DRY'], s:'stop', t:'Pas assez d\'eau dans le réchauffeur. Vérifiez le niveau d\'eau et le filtre.'},
+    {c:['LF'], s:'stop', t:'Débit faible persistant. Le chauffage est arrêté, le reste fonctionne. Vérifiez le filtre et le niveau d\'eau.'},
+    {c:['FLO','FL'], s:'warn', t:'Problème de débit ou de pressostat. Vérifiez le filtre et le niveau d\'eau.'},
+    {c:['HFL','HL'], s:'warn', t:'Grand écart entre les sondes de température : débit sans doute faible (filtre encrassé ou air dans le circuit).'},
+    {c:['SN','SNS'], s:'warn', t:'Les sondes de température donnent des valeurs différentes.'},
+    {c:['DR'], s:'warn', t:'Peut-être pas assez d\'eau dans le réchauffeur. Le spa refait un test sous peu.'},
+    {c:['ICE','IC'], s:'info', t:'Risque de gel. Les pompes démarrent automatiquement pour protéger l\'installation.'},
+    {c:['COOL','COL'], s:'info', t:'L\'eau est bien en dessous de la consigne.'},
+    {c:['PR'], s:'info', t:'Amorçage après la mise sous tension. Cela dure quelques minutes.'},
+    {c:['--','---','----','--C','--F'], s:'info', t:'Température pas encore disponible (démarrage ou amorçage).'}
   ];
   var NOT_ERR=['STD','ST','ECN','EC','SLP','SL'];
   function renderErr(){
@@ -531,7 +531,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     if(NOT_ERR.indexOf(key)>=0){ card.classList.add('hide'); return; }
     var hit=ERR_CODES.filter(function(e){ return e.c.indexOf(key)>=0; })[0];
     $('errCode').textContent=raw;
-    $('errTxt').textContent=hit ? hit.t : 'Mesaj necunoscut afișat de jacuzzi. Caută codul în manualul Balboa.';
+    $('errTxt').textContent=hit ? hit.t : 'Message inconnu affiché par le spa. Cherchez le code dans le manuel Balboa.';
     card.className='card err sev-'+(hit?hit.s:'warn');
   }
 
@@ -539,12 +539,12 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     $('cfgTitle').value=CFG.title;
     $('cfgErr').checked=!!CFG.err;
     $('cfgLoc').value=CFG.loc ? CFG.loc.q : '';
-    $('cfgLocHint').textContent=CFG.loc ? ('Găsită: '+CFG.loc.name) : 'Fără localitate, temperatura de afară nu apare.';
+    $('cfgLocHint').textContent=CFG.loc ? ('Trouvée : '+CFG.loc.name) : 'Sans ville, la température extérieure n\'est pas affichée.';
     var box=$('cfgRows'); box.innerHTML='';
     FEATS.forEach(function(d){
       var f=feat(d.k);
       var row=document.createElement('div'); row.className='frow';
-      var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=f.v; cb.id='cv_'+d.k; cb.setAttribute('aria-label','Afișează '+d.def);
+      var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=f.v; cb.id='cv_'+d.k; cb.setAttribute('aria-label','Afficher '+d.def);
       var tx=document.createElement('input'); tx.type='text'; tx.maxLength=24; tx.value=f.n; tx.placeholder=d.def; tx.id='cn_'+d.k;
       row.appendChild(cb); row.appendChild(tx); box.appendChild(row);
     });
@@ -560,7 +560,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
 
   $('cfgSave').onclick=function(){
     var title=$('cfgTitle').value.trim();
-    if(!title){ toast('Scrie un nume'); $('cfgTitle').focus(); return; }
+    if(!title){ toast('Saisissez un nom'); $('cfgTitle').focus(); return; }
     var f={};
     FEATS.forEach(function(d){
       var n=$('cn_'+d.k).value.trim();
@@ -573,22 +573,22 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     else if(CFG.loc && CFG.loc.q===q) locP=Promise.resolve(CFG.loc);
     else locP=geocode(q);
     locP.then(function(loc){
-      if(q && !loc){ toast('Nu am găsit localitatea „'+q+'”'); return; }
+      if(q && !loc){ toast('Ville « '+q+' » introuvable'); return; }
       var errOn=$('cfgErr').checked;
       var body='title='+encodeURIComponent(title)+'&cfg='+encodeURIComponent(JSON.stringify({f:f,loc:loc,err:errOn?1:0}));
       return fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
         .then(function(r){ return r.json(); })
         .then(function(r){
-          if(r.ok){ CFG.title=title; CFG.f=f; CFG.loc=loc; CFG.err=errOn; wxData=null; applyCfg(); buildCfgForm(); toast('Salvat'); loadHistory(); loadWeather(); }
-          else toast('Nu am putut salva');
+          if(r.ok){ CFG.title=title; CFG.f=f; CFG.loc=loc; CFG.err=errOn; wxData=null; applyCfg(); buildCfgForm(); toast('Enregistré'); loadHistory(); loadWeather(); }
+          else toast('Enregistrement impossible');
         });
-    }).catch(function(){ toast('Nu am putut salva'); });
+    }).catch(function(){ toast('Enregistrement impossible'); });
   };
 
   // ---- outdoor temperature (Open-Meteo, fetched by the phone, not the module) ----
   var wxData=null;
   function geocode(q){
-    return fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&format=json&name='+encodeURIComponent(q))
+    return fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&format=json&language=fr&name='+encodeURIComponent(q))
       .then(function(r){ return r.json(); })
       .then(function(d){
         var g=d && d.results && d.results[0];
@@ -608,14 +608,14 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     storm:'<svg viewBox="0 0 24 24"><path d="M7 14h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 14z"/><path d="M12 14l-2 4h3l-2 4"/></svg>'
   };
   function wxDesc(code,day){
-    if(code===0) return [day?'sun':'moon','Senin'];
-    if(code===1||code===2) return ['cloud','Parțial noros'];
-    if(code===3) return ['cloud','Înnorat'];
-    if(code===45||code===48) return ['fog','Ceață'];
-    if(code>=51&&code<=57) return ['rain','Burniță'];
-    if((code>=61&&code<=67)||(code>=80&&code<=82)) return ['rain','Ploaie'];
-    if((code>=71&&code<=77)||code===85||code===86) return ['snow','Ninsoare'];
-    if(code>=95) return ['storm','Furtună'];
+    if(code===0) return [day?'sun':'moon','Dégagé'];
+    if(code===1||code===2) return ['cloud','Partiellement nuageux'];
+    if(code===3) return ['cloud','Couvert'];
+    if(code===45||code===48) return ['fog','Brouillard'];
+    if(code>=51&&code<=57) return ['rain','Bruine'];
+    if((code>=61&&code<=67)||(code>=80&&code<=82)) return ['rain','Pluie'];
+    if((code>=71&&code<=77)||code===85||code===86) return ['snow','Neige'];
+    if(code>=95) return ['storm','Orage'];
     return ['cloud',''];
   }
   function loadWeather(){
@@ -646,7 +646,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     var vals=t.filter(function(v){return v!==null;});
     if(vals.length<2){
       svg.innerHTML='';
-      $('histHint').textContent='Se adună date: un punct la fiecare 5 minute. Istoricul se pierde la repornirea modulului.';
+      $('histHint').textContent='Collecte en cours : un point toutes les 5 minutes. L\'historique est perdu au redémarrage du module.';
       return;
     }
     var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
@@ -659,14 +659,14 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     var hs=(H.h||'');
     for(var i=0;i<n;i++){ if(hs.charAt(i)==='1'){ var x0=Math.max(L,X(i)), x1=Math.min(W-R,X(i)+(W-L-R)*iv/span); if(x1>x0) out+='<rect class="ch-heat" x="'+x0.toFixed(1)+'" y="'+T+'" width="'+(x1-x0).toFixed(1)+'" height="'+(Ht-T-B)+'"/>'; } }
     [mn,(mn+mx)/2,mx].forEach(function(v){ var y=Y(v).toFixed(1); out+='<line class="ch-grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'"/><text class="ch-txt" x="'+(L-4)+'" y="'+y+'" text-anchor="end" dominant-baseline="middle">'+(Math.round(v*10)/10)+'°</text>'; });
-    [['−24 h',L,'start'],['−12 h',L+(W-L-R)/2,'middle'],['acum',W-R,'end']].forEach(function(a){ out+='<text class="ch-txt" x="'+a[1]+'" y="'+(Ht-4)+'" text-anchor="'+a[2]+'">'+a[0]+'</text>'; });
+    [['−24 h',L,'start'],['−12 h',L+(W-L-R)/2,'middle'],['maint.',W-R,'end']].forEach(function(a){ out+='<text class="ch-txt" x="'+a[1]+'" y="'+(Ht-4)+'" text-anchor="'+a[2]+'">'+a[0]+'</text>'; });
     var seg=[];
     function flush(){ if(seg.length>1) out+='<polyline class="ch-line" points="'+seg.join(' ')+'"/>'; seg=[]; }
     for(var j=0;j<n;j++){ if(t[j]===null){ flush(); continue; } var xx=X(j); if(xx<L){ continue; } seg.push(xx.toFixed(1)+','+Y(t[j]).toFixed(1)); }
     flush();
     svg.innerHTML=out;
     var hasHeat=hs.indexOf('1')>=0;
-    $('histHint').textContent='Minim '+Math.min.apply(null,vals).toFixed(1)+' °C · maxim '+Math.max.apply(null,vals).toFixed(1)+' °C'+(hasHeat?' · zonele colorate: încălzire pornită':'');
+    $('histHint').textContent='Min '+Math.min.apply(null,vals).toFixed(1)+' °C · max '+Math.max.apply(null,vals).toFixed(1)+' °C'+(hasHeat?' · zones colorées : chauffe en marche':'');
   }
   function loadHistory(){ if(!feat('graph').v) return; api('/api/history').then(function(r){ if(r && r.t) drawChart(r); }); }
   setInterval(loadHistory, 300000);

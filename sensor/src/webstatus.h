@@ -79,12 +79,12 @@ void handleSend() {
 
     String message = webserver.arg("plain");
     webserver.send(200, "text/plain", message);
-    logAdd('W', "Pagina /send: " + message);
+    logAdd('W', "Page /send : " + message);
     sendBuffer.enqueue(message);
 }
 
 void sendApiResult(bool ok, const String& msg) {
-  if (!ok && msg == "nopanel") logAdd('W', "Comandă refuzată: pinul 5 nu e detectat");
+  if (!ok && msg == "nopanel") logAdd('W', "Commande refusée : broche 5 non détectée");
   String j = "{\"ok\": " + String(ok ? "true" : "false") + ", \"msg\": \"" + jsonEscape(msg) + "\"}";
   webserver.send(ok ? 200 : 400, "application/json", j);
 }
@@ -107,11 +107,11 @@ void handleApiCmd() {
     return;
   }
   if (sendBuffer.itemCount() >= SINGLE_CMD_QUEUE_MAX) {
-    logAdd('W', "Pagina: " + a + " refuzat, coada are " + String(sendBuffer.itemCount()) + " comenzi");
+    logAdd('W', "Page : " + a + " refusé, la file contient " + String(sendBuffer.itemCount()) + " commandes");
     sendApiResult(false, "busy");
     return;
   }
-  logAdd('W', "Pagina: buton " + a);
+  logAdd('W', "Page : bouton " + a);
   if (a == "up") {
     sendBuffer.enqueue(COMMAND_UP);
   } else if (a == "down") {
@@ -151,7 +151,7 @@ void handleApiTarget() {
     sendApiResult(false, "out of range");
     return;
   }
-  logAdd('W', "Pagina: temperatura dorită " + String(t, 1) + " (acum " + String(tubTargetTemp, 1) + ")");
+  logAdd('W', "Page : consigne " + String(t, 1) + " (actuelle " + String(tubTargetTemp, 1) + ")");
   if (setTargetTemperature(t)) {
     sendApiResult(true, "target " + String(t, 1));
   } else {
@@ -179,7 +179,7 @@ void handleApiMode() {
     sendApiResult(true, "no change");
     return;
   }
-  logAdd('W', "Pagina: mod " + String(currentIndex) + " -> " + String(m));
+  logAdd('W', "Page : mode " + String(currentIndex) + " -> " + String(m));
   sendBuffer.enqueue(COMMAND_CHANGE_MODE);
   setOption(currentIndex, m, 3, COMMAND_DOWN);
   sendBuffer.enqueue(COMMAND_CHANGE_MODE);
@@ -192,31 +192,31 @@ void handleApiWifiReset() {
   delay(500);
   WiFiManager wm;
   wm.resetSettings();
-  restartWith("schimbare rețea WiFi din pagină");
+  restartWith("changement de réseau Wi-Fi depuis la page");
 }
 
 // POST /api/restart
 void handleApiRestart() {
   sendApiResult(true, "restarting");
   delay(500);
-  restartWith("repornire din pagină");
+  restartWith("redémarrage depuis la page");
 }
 
 // POST /api/queue/clear - drop every command still waiting
 void handleApiQueueClear() {
   int n = queueClear();
-  logAdd('W', "Pagina: am golit coada (" + String(n) + " comenzi)");
+  logAdd('W', "Page : file vidée (" + String(n) + " commandes)");
   sendApiResult(true, String(n));
 }
 
 // POST /api/log/clear
 void handleApiLogClear() {
   logClear();
-  logAdd('W', "Jurnal golit");
+  logAdd('W', "Journal vidé");
   sendApiResult(true, "cleared");
 }
 
-// POST /api/log/note  (form field t) - a note typed by the user, e.g. "am apăsat Jet pe panou"
+// POST /api/log/note  (form field t) - a note typed by the user, e.g. "appui sur Jets 3 au clavier"
 void handleApiLogNote() {
   String t = webserver.arg("t");
   t.trim();
@@ -231,7 +231,7 @@ void handleApiLogNote() {
 // POST /api/log/sniff?on=1|0 - log button codes from the physical panel
 void handleApiSniff() {
   sniffOn = webserver.arg("on") == "1";
-  logAdd('S', sniffOn ? "Captare butoane panou fizic: pornită" : "Captare butoane panou fizic: oprită");
+  logAdd('S', sniffOn ? "Capture des touches du clavier : activée" : "Capture des touches du clavier : arrêtée");
   sendApiResult(true, sniffOn ? "on" : "off");
 }
 
@@ -254,7 +254,7 @@ void handleApiSendHex() {
     sendApiResult(false, "busy");
     return;
   }
-  logAdd('W', "Pagina: test cod " + h);
+  logAdd('W', "Page : test du code " + h);
   sendBuffer.enqueue(h);
   sendApiResult(true, h);
 }
@@ -269,7 +269,7 @@ void handleApiSendHex() {
 
 String uiTitle() {
   String t = prefs.getString("uiTitle", "");
-  return t.length() > 0 ? t : String("Jacuzzi");
+  return t.length() > 0 ? t : String("Spa");
 }
 
 // GET /api/config
