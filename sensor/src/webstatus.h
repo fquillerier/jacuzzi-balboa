@@ -57,6 +57,7 @@ String getStatusJSON() {
   j += ", \"otaPct\": " + String((int)otaPct);
   j += ", \"sniff\": " + String(sniffOn ? "true" : "false");
   j += ", \"spy\": " + String(spyMode);
+  j += ", \"jet3\": " + String(COMMAND_JET3.length() ? "true" : "false");
   j += " } }";
   return j;
 }
@@ -96,7 +97,7 @@ void handleApiStatus() {
   webserver.send(200, "application/json", getStatusJSON());
 }
 
-// /api/cmd?a=up|down|light|jet1|jet2|aux|mode|time
+// /api/cmd?a=up|down|light|jet1|jet2|jet3|aux|mode|time
 // Each action is one simulated button press on the topside panel.
 void handleApiCmd() {
   String a = webserver.arg("a");
@@ -124,6 +125,12 @@ void handleApiCmd() {
     sendBuffer.enqueue(COMMAND_JET1);
   } else if (a == "jet2") {
     sendBuffer.enqueue(COMMAND_JET2);
+  } else if (a == "jet3") {
+    if (COMMAND_JET3.length() == 0) {
+      sendApiResult(false, "no code");
+      return;
+    }
+    sendBuffer.enqueue(COMMAND_JET3);
   } else if (a == "aux") {
     sendBuffer.enqueue(COMMAND_AUX);
   } else if (a == "mode") {
@@ -161,31 +168,38 @@ void handleApiTarget() {
   }
 }
 
-// /api/mode?m=0|1|2   (Standard / Economy / Sleep)
-void handleApiMode() {
-  if (!panelDetected) {
-    sendApiResult(false, "nopanel");
-    return;
-  }
-  int m = webserver.arg("m").toInt();
-  if (!webserver.hasArg("m") || m < 0 || m > 2) {
-    sendApiResult(false, "bad mode");
-    return;
-  }
+// Switch the heating mode by simulating Mode → Cool × n → Mode.
+// Returns "ok", "no change" or why it could not be done (used by the page and the scheduler).
+String requestMode(int m, const char* who) {
+  if (!panelDetected) return "nopanel";
+  if (m < 0 || m > 2) return "bad mode";
+  if (otaTask) return "busy";
   int currentIndex = modeIdx;
-  if (currentIndex < 0) {
-    sendApiResult(false, "mode unknown");
-    return;
-  }
-  if (currentIndex == m) {
-    sendApiResult(true, "no change");
-    return;
-  }
-  logAdd('W', "Page : mode " + String(currentIndex) + " -> " + String(m));
+  if (currentIndex < 0) return "mode unknown";
+  if (currentIndex == m) return "no change";
+  if (!sendBuffer.isEmpty()) return "busy";   // wait for the previous commands to finish
+  logAdd('W', String(who) + " : mode " + String(currentIndex) + " -> " + String(m));
   sendBuffer.enqueue(COMMAND_CHANGE_MODE);
   setOption(currentIndex, m, 3, COMMAND_DOWN);
   sendBuffer.enqueue(COMMAND_CHANGE_MODE);
-  sendApiResult(true, "mode " + String(m));
+  return "ok";
+}
+
+// /api/mode?m=0|1|2   (Standard / Economy / Sleep)
+void handleApiMode() {
+  if (!webserver.hasArg("m")) {
+    sendApiResult(false, "bad mode");
+    return;
+  }
+  int m = webserver.arg("m").toInt();
+  String r = requestMode(m, "Page");
+  if (r == "ok") {
+    sendApiResult(true, "mode " + String(m));
+  } else if (r == "no change") {
+    sendApiResult(true, r);
+  } else {
+    sendApiResult(false, r);
+  }
 }
 
 // POST /api/wifireset - forget the saved WiFi and restart into the setup hotspot

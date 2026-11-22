@@ -25,6 +25,7 @@
 #define LOG_FLASH_BYTES 3900  // NVS strings are limited to 4000 bytes
 #define LOG_FLASH_EVERY_MS 600000UL
 #define LOG_FLASH_ERR_MS 300000UL
+#define TZ_PARIS "CET-1CEST,M3.5.0,M10.5.0/3"  // France: CET/CEST with the EU summer time rules
 #define CLOCK_VALID 1700000000UL  // any epoch before this means "clock not set yet"
 
 struct LogLine {
@@ -134,7 +135,7 @@ void logBegin(uint16_t boot, bool powerLoss) {
 
 // Internet time (falls back to the phone's clock, sent by the page)
 void clockBegin() {
-  configTzTime("EET-2EEST,M3.5.0/3,M10.5.0/4", "pool.ntp.org", "time.google.com");
+  configTzTime(TZ_PARIS, "pool.ntp.org", "time.google.com");
 }
 
 // Give lines written before the clock was known their real time
@@ -204,7 +205,7 @@ void handleApiTime() {
   if (nowEpoch() == 0 && t >= CLOCK_VALID) {
     struct timeval tv = {(time_t)t, 0};
     settimeofday(&tv, nullptr);
-    setenv("TZ", "EET-2EEST,M3.5.0/3,M10.5.0/4", 1);
+    setenv("TZ", TZ_PARIS, 1);
     tzset();
     logAdd('S', "Heure réglée depuis le téléphone");
   }

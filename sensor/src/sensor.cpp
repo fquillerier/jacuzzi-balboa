@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.8.0"
+#define FW_VERSION "1.8.1"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -221,6 +221,8 @@ void attachPanelInterrupt();
 #include "webstatus.h"
 #include "ota_online.h"
 #include "spy.h"
+#include "keys.h"
+#include "sched.h"
 
 byte nibble(char c);
 void hexCharacterStringToBytes(byte* byteArray, const char* hexString);
@@ -290,6 +292,7 @@ String cmdName(const String& hex) {
     if (h == COMMAND_AUX) return "Blower";
     if (h == COMMAND_JET1) return "Pompe 1";
     if (h == COMMAND_JET2) return "Pompe 2";
+    if (COMMAND_JET3.length() && h == COMMAND_JET3) return "Pompe 3";
     if (h == COMMAND_EMPTY) return "Vide";
     if (h == COMMAND_LIGHT) return "Éclairage";
     return "code inconnu";
@@ -625,6 +628,8 @@ void setup() {
     esp_reset_reason_t rr = esp_reset_reason();
     bootReason = (rr == ESP_RST_SW && why.length() > 0) ? why : resetReasonText(rr);
     logBegin(bootCount, rr == ESP_RST_POWERON || rr == ESP_RST_BROWNOUT);
+    keysLoad();   // button codes changed from the page
+    schedLoad();  // heating mode schedule
     logAdd('S', "Démarrage n°" + String(bootCount) + ", cause : " + bootReason + ", firmware " FW_VERSION);
     prefs.getString("mqttHost", "").toCharArray(mqttHost, sizeof(mqttHost));
     prefs.getString("mqttPort", "1883").toCharArray(mqttPort, sizeof(mqttPort));
@@ -747,6 +752,10 @@ void setup() {
     webserver.on("/api/spy", HTTP_GET, handleApiSpy);
     webserver.on("/api/spy/mode", HTTP_POST, handleApiSpyMode);
     webserver.on("/api/spy/clear", HTTP_POST, handleApiSpyClear);
+    webserver.on("/api/keys", HTTP_GET, handleApiKeysGet);
+    webserver.on("/api/keys", HTTP_POST, handleApiKeysPost);
+    webserver.on("/api/sched", HTTP_GET, handleApiSchedGet);
+    webserver.on("/api/sched", HTTP_POST, handleApiSchedPost);
     webserver.on("/manifest.webmanifest", handleManifest);
     webserver.on("/icon-180.png", handleIcon180);
     webserver.on("/icon-192.png", handleIcon192);
@@ -984,6 +993,7 @@ void loop() {
     }
 
     historyTick();
+    schedTick();
     watchdogTick();
     logTick();
 
