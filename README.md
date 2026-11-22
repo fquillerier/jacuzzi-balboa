@@ -163,6 +163,26 @@ Les codes des touches viennent de claviers de GL2000. Avant de compter dessus :
 2. Appuyez sur une touche du clavier du spa (ML700…), puis notez-la avec **Ajouter la note**.
 3. Le code apparaît avec la lettre **P**. Comparez-le à ceux de `sensor/src/constants.h`. Un bouton **Envoyer** permet de le rejouer pour tester.
 
+## Espion du bus (analyse des trames)
+
+Section **Espion du bus (trames)** en bas de la page.
+
+| Mode | Ce qui est enregistré |
+|---|---|
+| **Simple** | une trame seulement si elle diffère de la précédente du même type : idéal pour voir ce qui change |
+| **Avancé** | toutes les trames (FA, AE, FB), de tous les ports |
+
+- Le module garde les dernières trames dans un **tampon tournant en mémoire vive** (environ 1 500 trames, rien n'est écrit en mémoire flash). Quand il est plein, les plus anciennes sont écrasées.
+- **C'est le téléphone qui accumule tout l'historique**, tant que la section est ouverte. Gardez l'écran allumé ; si le téléphone se met en veille, les trames manquées sont signalées « perdues ».
+- Le compteur **trames/s** indique le débit réel du bus : en mode avancé, 10 minutes ≈ 600 × ce nombre de trames (≈ 70 octets chacune dans le fichier).
+- **Ajouter un repère** : note horodatée dans l'historique (« démarrage pompe 3 »…), pour retrouver le moment d'une action.
+- **Enregistrer sur le téléphone** : fichier texte `espion-spa-AAAAMMJJ-HHMMSS.txt`, à envoyer pour analyse. Colonnes : n°, heure, ms du module, **N** (notre tour, J70) ou **A** (autre port), type, trame en hexadécimal.
+- Les octets **surlignés** sont ceux qui ont changé depuis la trame précédente du même type.
+
+**Méthode pour identifier un équipement** (pompe 3, blower, ozone) : mode simple, repère « avant », démarrer l'équipement, repère « marche », l'arrêter, repère « arrêt », puis enregistrer le fichier.
+
+Limite : en dehors de notre tour, le module ne sait pas à quel port une trame est destinée (seule la broche 5 de J70 lui est reliée).
+
 ## Mise à jour du firmware par Wi-Fi
 
 **En ligne :** **Réglages et informations → Rechercher une mise à jour → Installer**. Le module télécharge la dernière version publiée dans les [Releases de ce dépôt](https://github.com/fquillerier/jacuzzi-balboa/releases), vérifie le fichier (SHA-256) et redémarre. Le téléphone doit avoir Internet. Historique des versions : [CHANGELOG.md](CHANGELOG.md).
