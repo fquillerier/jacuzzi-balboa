@@ -222,7 +222,7 @@ void attachPanelInterrupt();
 #include "ota_online.h"
 #include "spy.h"
 #include "keys.h"
-#include "sched.h"
+#include "modesched.h"
 
 byte nibble(char c);
 void hexCharacterStringToBytes(byte* byteArray, const char* hexString);
