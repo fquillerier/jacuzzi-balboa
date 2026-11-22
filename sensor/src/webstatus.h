@@ -20,6 +20,7 @@ String jsonEscape(const String& s) {
 }
 
 extern char otaState[96];
+extern uint8_t spyMode;
 extern volatile int otaPct;
 extern TaskHandle_t otaTask;
 
@@ -55,6 +56,7 @@ String getStatusJSON() {
   j += ", \"ota\": \"" + jsonEscape(String(otaState)) + "\"";
   j += ", \"otaPct\": " + String((int)otaPct);
   j += ", \"sniff\": " + String(sniffOn ? "true" : "false");
+  j += ", \"spy\": " + String(spyMode);
   j += " } }";
   return j;
 }

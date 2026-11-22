@@ -92,6 +92,19 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
 .ty-E{color:#dc2626}.ty-T{color:var(--accent)}.ty-P{color:#9333ea}.ty-W{color:var(--ok)}.ty-M{color:var(--warm)}.ty-S,.ty-R{color:var(--muted)}
 .ll.E{background:rgba(220,38,38,.07)}.ll.P,.ll.M{background:var(--accent-bg)}
 .lrow{display:flex;gap:8px;align-items:center;margin-top:8px}
+.spy{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;height:45vh;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:var(--bg);white-space:pre-wrap;word-break:normal}
+.spy .sl{padding-left:2ch;text-indent:-2ch}
+.spy .sl{display:block}
+.spy .st{color:var(--muted)}
+.spy .so{color:var(--accent);font-weight:700}
+.spy .sa{color:var(--muted);font-weight:700}
+.spy .ch{background:var(--warm-bg);color:var(--warm);font-weight:700;border-radius:3px}
+.spy .gap{color:#dc2626;font-weight:700}
+.spystat{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5}
+.spystat b{color:var(--text)}
+.rec{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:middle}
+.rec.on{background:#dc2626;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.3}}
 .lrow input[type=text]{flex:1;min-width:0}
 </style>
 </head>
@@ -214,6 +227,37 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
       <div class="small" style="margin-top:8px">Le journal est conservé après un redémarrage. Après une coupure de courant, seules les 40 dernières lignes environ restent.</div>
       <div class="small" style="margin-top:4px">R reçu · T envoyé · P clavier du spa · W depuis la page · S système · E erreur · M note</div>
       <div class="log" id="log"></div>
+    </section>
+  </details>
+
+  <details id="spyBox">
+    <summary>Espion du bus (trames)</summary>
+    <section class="card">
+      <div class="seg" id="spyModes">
+        <button data-s="0">Arrêt</button>
+        <button data-s="1">Simple</button>
+        <button data-s="2">Avancé</button>
+      </div>
+      <p class="small" style="margin:8px 0 0"><b>Simple</b> : une trame n'est gardée que si elle diffère de la précédente du même type. <b>Avancé</b> : toutes les trames.
+      Le module ne garde que les dernières trames ; <b>c'est ce téléphone qui accumule tout l'historique</b> tant que cette section est ouverte. Gardez l'écran allumé pendant l'enregistrement.</p>
+      <div class="spystat" id="spyStat">Espion arrêté.</div>
+      <div class="lrow">
+        <select id="spyF" aria-label="Filtre des trames">
+          <option value="">Toutes les trames</option>
+          <option value="fa">FA (état du spa)</option>
+          <option value="ae">AE (messages)</option>
+          <option value="fb">FB (touches des claviers)</option>
+          <option value="o">Notre tour seulement</option>
+          <option value="a">Autres ports seulement</option>
+        </select>
+      </div>
+      <button class="btn sm" id="spyPause">Pause affichage</button>
+      <button class="btn sm" id="spyMark">Ajouter un repère</button>
+      <button class="btn sm primary" id="spySave">Enregistrer sur le téléphone</button>
+      <button class="btn sm hide" id="spyShare">Partager</button>
+      <button class="btn sm danger" id="spyClear">Effacer</button>
+      <div class="spy" id="spyLog"></div>
+      <div class="small" style="margin-top:6px">N = notre tour (J70) · A = autre port · octets <span style="background:var(--warm-bg);color:var(--warm);font-weight:700;border-radius:3px">surlignés</span> = changés depuis la trame précédente du même type.</div>
     </section>
   </details>
 </main>
@@ -474,6 +518,133 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   };
   $('note').addEventListener('keydown',function(e){ if(e.key==='Enter') $('noteAdd').onclick(); });
   $('sniff').onchange=function(){ var on=this.checked; post('/api/log/sniff?on='+(on?1:0)).then(function(r){ toast(r.ok?(on?'Capture activée':'Capture arrêtée'):'Échec'); loadLog(); }); };
+
+  // ---- bus spy: the module keeps a short ring buffer, this page accumulates everything ----
+  var SP={mode:0, seq:null, frames:[], lost:0, paused:false, busy:false, timer:null, prev:{}, view:[], cap:0, rate:0, seen:0, heap:0, saved:0, marks:0};
+  var SPY_KEEP=300000;  // frames kept on the phone (~25 MB); the oldest are dropped beyond that
+  var SPY_VIEW=400;     // lines shown in the window
+  function hhmmss(t){ var d=new Date(t); return clock(d)+'.'+('00'+d.getMilliseconds()).slice(-3); }
+  function spyKind(h){ var t=h.slice(0,2); return t==='ae'?h.slice(0,6):(t==='fb'?h.slice(0,10):h.slice(0,4)); }
+  function spyType(h){ var t=h.slice(0,2); return t==='fa'||t==='ae'||t==='fb'?t.toUpperCase():'??'; }
+  function spySetSeg(){ [].forEach.call($('spyModes').querySelectorAll('button'),function(b){ b.classList.toggle('sel',+b.dataset.s===SP.mode); }); }
+  function spyLine(f){
+    // f: {seq, t, o, h, ch:[byte indexes changed], gap, mark}
+    var d=document.createElement('span'); d.className='sl';
+    if(f.mark){ d.innerHTML='<span class="gap">── repère : '+esc(f.mark)+' ──</span>'; return d; }
+    if(f.gap){ d.innerHTML='<span class="gap">⚠ '+f.gap+' trame(s) perdue(s) (écran en veille ou page fermée ?)</span>'; return d; }
+    var html='<span class="st">'+hhmmss(f.t)+'</span> <span class="'+(f.o?'so">N':'sa">A')+'</span> '+spyType(f.h)+' ';
+    for(var i=0;i<f.h.length;i+=2){
+      var b=f.h.substr(i,2); html+=(f.ch&&f.ch.indexOf(i/2)>=0)?'<span class="ch">'+b+'</span>':b;
+      if(i+2<f.h.length) html+=' ';
+    }
+    d.innerHTML=html; return d;
+  }
+  function esc(t){ return String(t).replace(/[&<>]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+  function spyMatch(f){
+    var v=$('spyF').value; if(!v || f.gap || f.mark) return true;
+    if(v==='o') return !!f.o; if(v==='a') return !f.o;
+    return f.h.slice(0,2)===v;
+  }
+  function spyRender(){
+    var box=$('spyLog'), atBottom=box.scrollHeight-box.scrollTop-box.clientHeight<30, out=[];
+    for(var i=SP.frames.length-1;i>=0 && out.length<SPY_VIEW;i--){ if(spyMatch(SP.frames[i])) out.push(SP.frames[i]); }
+    box.textContent='';
+    var frag=document.createDocumentFragment();
+    for(var j=out.length-1;j>=0;j--) frag.appendChild(spyLine(out[j]));
+    box.appendChild(frag);
+    if(atBottom) box.scrollTop=box.scrollHeight;
+  }
+  function spyStatus(){
+    var n=SP.frames.filter(function(f){ return f.h; }).length;
+    var kb=n*70/1024, mb=kb>=1024?(kb/1024).toFixed(1).replace('.',',')+' Mo':Math.max(1,Math.round(kb))+' Ko';
+    $('spyStat').innerHTML=(SP.mode?'<span class="rec on"></span><b>Enregistrement '+(SP.mode===1?'simple':'avancé')+'</b>':'<span class="rec"></span><b>Espion arrêté</b>')+
+      ' · <b>'+n.toLocaleString('fr-FR')+'</b> trames sur ce téléphone (≈ '+mb+')'+
+      (SP.mode?'<br>Bus : <b>'+SP.rate+'</b> trames/s · vues depuis le début : '+SP.seen.toLocaleString('fr-FR')+' · mémoire du module : '+SP.cap+' trames · libre : '+Math.round(SP.heap/1024)+' Ko':'')+
+      (SP.lost?'<br><span class="gap">⚠ '+SP.lost.toLocaleString('fr-FR')+' trame(s) perdue(s) au total</span>':'')+
+      (n>SP.saved?'<br>Non enregistrées : '+(n-SP.saved).toLocaleString('fr-FR')+' trames':'');
+  }
+  function spyPoll(){
+    if(SP.busy || !$('spyBox').open) return;
+    SP.busy=true;
+    var q=SP.seq===null?'':'since='+SP.seq+'&';
+    var ctl=window.AbortController?new AbortController():null, to=setTimeout(function(){ if(ctl) ctl.abort(); },6000);
+    fetch('/api/spy?'+q+'max=600',{cache:'no-store',signal:ctl?ctl.signal:undefined}).then(function(x){ return x.json(); }).catch(function(){ return null; }).then(function(r){
+      clearTimeout(to); SP.busy=false;
+      if(!r) return;
+      SP.mode=r.mode; SP.cap=r.cap; SP.rate=r.rate; SP.seen=r.seen; SP.heap=r.heap; spySetSeg();
+      if(SP.seq!==null && r.last<SP.seq){ SP.seq=null; SP.prev={}; }  // module restarted or buffer cleared
+      if(SP.seq!==null && r.first>SP.seq){ var g=r.first-SP.seq; SP.lost+=g; SP.frames.push({gap:g}); }
+      var base=Date.now()-r.now, added=0;
+      r.frames.forEach(function(a){
+        var h=a[3], o=a[2], k=o+':'+spyKind(h), p=SP.prev[k], ch=[];
+        if(p && p.length===h.length){ for(var i=0;i<h.length;i+=2) if(h.substr(i,2)!==p.substr(i,2)) ch.push(i/2); }
+        SP.prev[k]=h;
+        SP.frames.push({seq:a[0], t:base+a[1], ms:a[1], o:o, h:h, ch:ch}); added++;
+      });
+      SP.seq=r.seq;
+      if(SP.frames.length>SPY_KEEP){ var cut=SP.frames.length-SPY_KEEP; SP.frames.splice(0,cut); SP.saved=Math.max(0,SP.saved-cut); }
+      if(added && !SP.paused) spyRender();
+      spyStatus();
+      if(r.seq<r.last) setTimeout(spyPoll,50);  // more waiting on the module
+    });
+  }
+  function spyText(St){
+    var S=St||{}, d=new Date();
+    var head=['# Espion du bus · '+CFG.title+' · '+d.toLocaleString('fr-FR'),
+      '# Firmware '+(S.fw||'-')+' · mode '+(SP.mode===2?'avancé':SP.mode===1?'simple':'arrêté')+' · '+SP.rate+' trames/s sur le bus · trames perdues : '+SP.lost,
+      '# Colonnes : n° · heure (téléphone) · ms (module) · N = notre tour / A = autre port · type · trame (hex)',
+      ''];
+    var lines=SP.frames.map(function(f){
+      if(f.mark) return '# --- repère : '+f.mark+' ---';
+      if(f.gap) return '# !!! '+f.gap+' trame(s) perdue(s)';
+      return f.seq+'\t'+hhmmss(f.t)+'\t'+f.ms+'\t'+(f.o?'N':'A')+'\t'+spyType(f.h)+'\t'+f.h;
+    });
+    return head.concat(lines).join('\n')+'\n';
+  }
+  function spyFile(St){
+    var d=new Date(), name='espion-spa-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())+'.txt';
+    return {name:name, blob:new Blob([spyText(St)],{type:'text/plain;charset=utf-8'})};
+  }
+  $('spyModes').onclick=function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    var m=+b.dataset.s;
+    if(m===0 && SP.frames.length>SP.saved && !confirm('Arrêter l\'espion ? Les trames déjà reçues restent sur ce téléphone jusqu\'à ce que vous les effaciez.')) return;
+    post('/api/spy/mode?m='+m).then(function(r){
+      if(!r.ok){ toast(r.msg==='no memory'?'Pas assez de mémoire libre sur le module':'Échec'); return; }
+      SP.mode=m; spySetSeg(); spyStatus();
+      toast(m?('Espion '+(m===1?'simple':'avancé')+' activé'):'Espion arrêté');
+      if(m) spyPoll();
+    });
+  };
+  $('spyF').onchange=spyRender;
+  $('spyPause').onclick=function(){ SP.paused=!SP.paused; this.textContent=SP.paused?'Reprendre l\'affichage':'Pause affichage'; if(!SP.paused) spyRender(); };
+  $('spyMark').onclick=function(){
+    var t=prompt('Texte du repère (par exemple « démarrage pompe 3 ») :',''); if(t===null) return;
+    t=t.trim()||('repère '+(++SP.marks));
+    SP.frames.push({mark:hhmmss(Date.now())+' '+t}); spyRender(); spyStatus();
+  };
+  $('spyClear').onclick=function(){
+    if(SP.frames.length>SP.saved && !confirm('Effacer les trames de ce téléphone et du module ? Celles qui ne sont pas enregistrées seront perdues.')) return;
+    post('/api/spy/clear').then(function(){ SP.frames=[]; SP.prev={}; SP.lost=0; SP.saved=0; SP.seq=null; spyRender(); spyStatus(); });
+  };
+  $('spySave').onclick=function(){ fresh().then(function(St){
+    if(!SP.frames.length){ toast('Aucune trame à enregistrer'); return; }
+    var f=spyFile(St), a=document.createElement('a'); a.href=URL.createObjectURL(f.blob); a.download=f.name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); },10000);
+    SP.saved=SP.frames.length; spyStatus(); toast('Enregistré : '+f.name);
+  }); };
+  // sharing a file needs a secure page (https): only shown when the browser allows it
+  try{ if(navigator.canShare && navigator.canShare({files:[new File(['x'],'x.txt',{type:'text/plain'})]})) $('spyShare').classList.remove('hide'); }catch(e){}
+  $('spyShare').onclick=function(){
+    if(!SP.frames.length){ toast('Aucune trame à partager'); return; }
+    var f=spyFile(S), file=new File([f.blob],f.name,{type:'text/plain'});
+    navigator.share({files:[file], title:f.name}).then(function(){ SP.saved=SP.frames.length; spyStatus(); }).catch(function(){});
+  };
+  $('spyBox').addEventListener('toggle',function(){
+    if($('spyBox').open){ spyPoll(); SP.timer=setInterval(spyPoll,700); } else { clearInterval(SP.timer); }
+  });
+  window.addEventListener('beforeunload',function(e){ if(SP.frames.length>SP.saved){ e.preventDefault(); e.returnValue=''; } });
 
   // ---- page settings (stored on the module, same on every phone) ----
   var FEATS=[

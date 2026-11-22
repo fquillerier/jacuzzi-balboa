@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.7.0"
+#define FW_VERSION "1.8.0"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -220,6 +220,7 @@ void attachPanelInterrupt();
 #include "webui.h"
 #include "webstatus.h"
 #include "ota_online.h"
+#include "spy.h"
 
 byte nibble(char c);
 void hexCharacterStringToBytes(byte* byteArray, const char* hexString);
@@ -743,6 +744,9 @@ void setup() {
     webserver.on("/api/queue/clear", HTTP_POST, handleApiQueueClear);
     webserver.on("/api/restart", HTTP_POST, handleApiRestart);
     webserver.on("/api/sendhex", HTTP_POST, handleApiSendHex);
+    webserver.on("/api/spy", HTTP_GET, handleApiSpy);
+    webserver.on("/api/spy/mode", HTTP_POST, handleApiSpyMode);
+    webserver.on("/api/spy/clear", HTTP_POST, handleApiSpyClear);
     webserver.on("/manifest.webmanifest", handleManifest);
     webserver.on("/icon-180.png", handleIcon180);
     webserver.on("/icon-192.png", handleIcon192);
@@ -924,7 +928,9 @@ void readSerial(bool panelSelect) {
         }
     }
     else {
-        if (sniffOn && panelSelect == HIGH) {
+        if (spyMode && panelSelect == HIGH) {
+            spyRead();  // another panel's turn: record its frames (also feeds the button capture)
+        } else if (sniffOn && panelSelect == HIGH) {
             sniffRead();  // another panel's turn: look for its button codes
         }
         if(panelDetected) {
@@ -993,6 +999,7 @@ void handleMessage(size_t len, uint8_t buf[]) {
     if (buf[0] == 0xFA) {
         sendCommand();
     }
+    spyRecord(buf, len, 1);  // after our reply, so the spy never delays it
     result = "";
     for (int i = 0; i < len; i++) {
         if (buf[i] < 0x10) {
