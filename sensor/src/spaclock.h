@@ -15,6 +15,8 @@
 // shown, never changed. Writing the filter cycles needs the display format of these menus, which this
 // read-out records (journal, page).
 
+String cleanAscii(String hex);   // defined in sensor.cpp
+
 #define CK_SETTLE_MS 700UL          // after an accepted key, wait for the display to follow
 #define CK_KEY_TIMEOUT_MS 15000UL   // a key that never leaves the queue
 #define CK_PRESS_S 1.2f             // average time per key, to aim at the time when the setting ends

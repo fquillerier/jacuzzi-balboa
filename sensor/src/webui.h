@@ -820,7 +820,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
       $('ckSync').disabled=!!r.job; $('frRead').disabled=!!r.job;
       var fs=r.fr&&r.fr.steps||[], box=$('frSteps'); box.innerHTML='';
       if(fs.length){
-        var h=document.createElement('div'); h.className='small'; h.textContent='Relevé '+(r.fr.at?fmtWhen(r.fr.at):'')+(r.fr.done?'':' (en cours)')+' : touche → menu · affichage'; box.appendChild(h);
+        var h=document.createElement('div'); h.className='small'; h.style.wordBreak='normal'; h.style.fontFamily='inherit'; h.textContent='Relevé '+(r.fr.at?fmtWhen(r.fr.at):'')+(r.fr.done?'':' (en cours)')+' : touche → menu · affichage'; box.appendChild(h);
         fs.forEach(function(s,i){ var d=document.createElement('div'); d.textContent=(i+1)+'. '+s[0]+' → menu '+s[1]+' · « '+s[2]+' »'; d.title=s[3]; box.appendChild(d); });
       }
       clearTimeout(CK.timer);
