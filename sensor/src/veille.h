@@ -25,6 +25,7 @@ struct VStep {
   uint8_t kind;   // 1 set point, 2 mode
   float t;
   int m;
+  bool rem;       // set point step: first remember the current set point as the one to restore after Sleep
 };
 VStep vSteps[2];
 uint8_t vN = 0, vI = 0, vPhase = 0, vTries = 0;
@@ -102,20 +103,19 @@ String requestModeV(int m, const char* who) {
   if (!sendBuffer.isEmpty()) return "busy";
   if (m == MODE_IDX_SLP) {
     if (cur != MODE_IDX_SLP) {
-      vRememberWake();
-      VStep st[2] = {{1, vSleepT, 0}, {2, 0, MODE_IDX_SLP}};
+      VStep st[2] = {{1, vSleepT, 0, true}, {2, 0, MODE_IDX_SLP, false}};
       vStart(who, st, 2);
       return "ok";
     }
     if (vTargetKnown() && fabs(tubTargetTemp - vSleepT) > 0.2) {   // already asleep, set point not lowered
-      VStep st[1] = {{1, vSleepT, 0}};
+      VStep st[1] = {{1, vSleepT, 0, true}};
       vStart(who, st, 1);
       return "ok";
     }
     return "no change";
   }
   if (cur == MODE_IDX_SLP) {
-    VStep st[2] = {{2, 0, m}, {1, vWakeT, 0}};
+    VStep st[2] = {{2, 0, m, false}, {1, vWakeT, 0, false}};
     vStart(who, st, vWakeT >= 26 ? 2 : 1);
     return "ok";
   }
@@ -166,12 +166,11 @@ void vFollowCheck() {
   if (vFollowCount >= V_FOLLOW_MAX_PER_DAY) return;
   if (m == MODE_IDX_SLP && fabs(tubTargetTemp - vSleepT) > 0.2) {
     vFollowCount++;
-    vRememberWake();
-    VStep st[1] = {{1, vSleepT, 0}};
+    VStep st[1] = {{1, vSleepT, 0, true}};
     vStart("Veille choisie au clavier", st, 1);
   } else if (prev == MODE_IDX_SLP && m != MODE_IDX_SLP && vWakeT >= 26 && fabs(tubTargetTemp - vWakeT) > 0.2) {
     vFollowCount++;
-    VStep st[1] = {{1, vWakeT, 0}};
+    VStep st[1] = {{1, vWakeT, 0, false}};
     vStart("Sortie de veille au clavier", st, 1);
   }
 }
@@ -189,6 +188,10 @@ void veilleTick() {
         return;
       }
       if (s.kind == 1) {
+        if (s.rem && vTargetKnown()) {   // known now (it may have been read by the previous try)
+          vRememberWake();
+          s.rem = false;
+        }
         if (vTargetKnown() && fabs(tubTargetTemp - s.t) < 0.25) {
           vNext();
           return;
