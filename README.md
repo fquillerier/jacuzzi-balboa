@@ -30,32 +30,47 @@ Changements par rapport à l'original :
 | ESP32 DevKit (ESP-WROOM-32), USB-C | 30 ou 38 broches, les deux conviennent |
 | Module TTL–RS485 à contrôle **automatique** de direction | broches TXD, RXD, VCC, GND, **sans** RE/DE |
 | Câble Molex **Micro-Fit 3.0**, 8 broches (prise 43025-0800), fils nus | pas de 3 mm, vérifié sur la prise du ML700 |
-| **3 résistances de 4,7 kΩ** (ou tout couple de rapport 1:2 entre 1 et 47 kΩ) | pont diviseur de la broche 5 |
+| **3 résistances de 4,7 kΩ** (ou tout couple de rapport 1:2 entre 1 et 47 kΩ) | pont diviseur du signal de sélection (circuit 2) |
 | Chargeur USB 5 V + câble USB-C | alimentation pour le test |
 | Câbles Dupont, gaine thermorétractable, boîtier IP65, presse-étoupe PG7 | montage final |
-| *Facultatif :* abaisseur 5 V à sortie USB, entrée dès 6 V | pour alimenter l'ESP32 par le spa (broche 6), voir « Alimentation » |
+| *Facultatif :* abaisseur 5 V à sortie USB, entrée dès 6 V | pour alimenter l'ESP32 par le spa (circuit 6), voir « Alimentation » |
 
 ## Branchements (spa Balboa GL8000M3, port J70)
 
 Les ports clavier « MAIN PANELS » sont **J70 à J73**. Sur ce spa, le clavier ML700 est sur **J72** ; le module se branche sur **J70**, qui est libre. Ne pas utiliser les ports « AUX. PANELS » (6 broches), ni de câble en Y.
 
-### Repérage des broches de J70
+### Repérage des broches de J70 (numérotation Molex)
 
-Sur la carte, la prise est verticale, avec **l'ergot à gauche** : **masses (7, 8) en haut, broche 1 en bas à droite**. C'est l'inverse de la photo du projet d'origine, où la prise est tournée d'un demi-tour.
+**Ce README utilise la numérotation officielle Molex** des circuits de la prise Micro-Fit 3.0 : le **circuit 1** est repéré par le **petit triangle imprimé sur la carte** (en haut à droite de J70) et par le **« 1 » gravé ou la nervure** sur la prise du câble. Les circuits sont numérotés **rangée par rangée** : 1 à 4 dans la colonne de droite (de haut en bas), 5 à 8 dans la colonne de gauche.
 
-**Attention :** le petit triangle imprimé à côté de la prise (en haut à droite) suit la numérotation du fabricant, **pas celle du projet**. Ne pas s'y fier : le plan ci-dessous est validé par les mesures de tension.
+Sur la carte, la prise est verticale, avec **l'ergot à gauche**.
 
-![Brochage de J70 sur la carte GL8000](docs/brochage-J70.jpg)
+![Brochage de J70 sur la carte GL8000 (numérotation Molex)](docs/brochage-J70.jpg)
 
-| Broche (position sur la photo) | Rôle | Relié à | Mesuré (spa sous tension) |
+| Circuit Molex (position) | Rôle | Relié à | Mesuré (spa sous tension) |
 |---|---|---|---|
-| **1** (bas, droite) | RS485 B | module RS485 **B** | 0,8 V ✅ |
-| **3** (3ᵉ rang, droite) | RS485 A | module RS485 **A** | 4,16 V ✅ (A > B : bus au repos, polarité confirmée) |
-| **5** (2ᵉ rang, droite) | sélection clavier (signal 5 V) | **GPIO18 par le pont diviseur** | 4,16 V ✅ (moyenne d'un signal 5 V) |
+| **1** (haut, droite, triangle) | masse | GND commun | 0 V ✅ |
+| **2** (2ᵉ rang, droite) | signal de sélection du clavier (5 V) | **GPIO18 par le pont diviseur** | 4,16 V ✅ (moyenne d'un signal 5 V) |
+| **3** (3ᵉ rang, droite) | RS485 A | module RS485 **A** | 4,16 V ✅ |
+| **4** (bas, droite) | RS485 B | module RS485 **B** | 0,8 V ✅ (A > B : bus au repos, polarité confirmée) |
+| **5** (haut, gauche) | masse | (inutile si le 1 est branché) | 0 V ✅ |
 | **6** (2ᵉ rang, gauche) | ≈ 9 V | rien pour le test (plus tard : abaisseur 5 V) | 9 V ✅ |
-| **7** (haut, droite) | masse | GND commun | 0 V ✅ |
-| **8** (haut, gauche) | masse | (inutile si la 7 est branchée) | 0 V ✅ |
-| 2 et 4 | — | non connectées | — |
+| 7 et 8 (gauche, en bas) | — | non connectés | — |
+
+**Les positions et les tensions sont mesurées ; les numéros Molex sont déduits** du plan Molex (rangée par rangée, circuit 1 repéré). À la réception du câble, vérifier que le « 1 » gravé de sa prise tombe bien **en haut à droite, côté triangle**. En cas de doute, **se fier aux positions et aux tensions**, pas aux numéros.
+
+<details>
+<summary>Correspondance avec la numérotation du projet d'origine (netmindz / zaiclopz)</summary>
+
+Les documentations du projet d'origine utilisent leur propre numérotation (« broche 5 = panel select »…). Elle ne suit pas Molex :
+
+| Circuit Molex | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| Projet d'origine | 7 | 5 | 3 | 1 | 8 | 6 | 4 | 2 |
+| Rôle | masse | sélection | A | B | masse | 9 V | — | — |
+
+Dans le code, `PIN_5_PIN_DEF` (GPIO18) désigne ce signal de sélection : c'est le **circuit Molex 2**.
+</details>
 
 ### Schéma complet
 
@@ -68,18 +83,18 @@ Sur la carte, la prise est verticale, avec **l'ergot à gauche** : **masses (7, 
 | VCC | 3V3 |
 | GND | GND |
 
-### Pont diviseur de la broche 5 (obligatoire)
+### Pont diviseur du signal de sélection, circuit 2 (obligatoire)
 
-La broche 5 est un signal en **5 V** (mesuré : 4,16 V en moyenne). L'ESP32 accepte **3,6 V au maximum** sur ses entrées. Le projet d'origine la relie directement au GPIO18 ; ici, on protège l'ESP32 avec **3 résistances de 4,7 kΩ** :
+Le circuit 2 (signal de sélection du clavier) est un signal en **5 V** (mesuré : 4,16 V en moyenne). L'ESP32 accepte **3,6 V au maximum** sur ses entrées. Le projet d'origine le relie directement au GPIO18 ; ici, on protège l'ESP32 avec **3 résistances de 4,7 kΩ** :
 
 ```
-Broche 5 du spa ──[ R1 4,7 kΩ ]──┬── GPIO18 (ESP32)
-                                 │
-                            [ R2a 4,7 kΩ ]
-                                 │
-                            [ R2b 4,7 kΩ ]   (R2 = 2 × 4,7 kΩ en série = 9,4 kΩ)
-                                 │
-Broche 7 (masse) ────────────────┴── GND (ESP32)
+Circuit 2 (sélection) ──[ R1 4,7 kΩ ]──┬── GPIO18 (ESP32)
+                                       │
+                                  [ R2a 4,7 kΩ ]
+                                       │
+                                  [ R2b 4,7 kΩ ]   (R2 = 2 × 4,7 kΩ en série = 9,4 kΩ)
+                                       │
+Circuit 1 (masse) ─────────────────────┴── GND (ESP32)
 ```
 
 Tension sur le GPIO18 : 5 V × 9,4 / (4,7 + 9,4) = **3,33 V** à l'état haut, bien reconnue par l'ESP32.
@@ -94,35 +109,35 @@ Deux solutions possibles. On commence **toujours** par la première.
 
 **Solution 1 : chargeur USB (pour le test, et en définitif si une prise est disponible)**
 - Un chargeur USB 5 V et un câble USB-C branché sur l'ESP32.
-- La broche 6 du spa n'est **pas** branchée.
+- Le circuit 6 du spa n'est **pas** branché.
 
-**Solution 2 : alimentation par le spa (broche 6, ≈ 9 V)**
+**Solution 2 : alimentation par le spa (circuit 6, ≈ 9 V)**
 
-Un petit module abaisseur transforme les 9 V de la broche 6 en 5 V, sur une **sortie USB** : on y branche directement le câble USB-C de l'ESP32, sans souder sur la broche 5V.
+Un petit module abaisseur transforme les 9 V du circuit 6 en 5 V, sur une **sortie USB** : on y branche directement le câble USB-C de l'ESP32, sans souder sur la broche 5V.
 
 | Module | Prix | Remarque |
 |---|---|---|
 | [JZK 12/24 V → 5 V 5 A, sortie USB (Amazon.co.uk)](https://www.amazon.co.uk/dp/B071ZRXKJY) | ≈ 14,60 € | celui que recommande le projet netmindz ; **non livrable en France** (vérifié le 22/11/2026) |
-| [Lot de 2 abaisseurs 6–24 V → 5 V USB 3 A (Amazon.fr)](https://www.amazon.fr/dp/B07JLTTZXL) | ≈ 5,13 € les 2 | **équivalent conseillé** : entrée dès 6 V, bonne marge avec les 9 V de la broche 6 |
+| [Lot de 2 abaisseurs 6–24 V → 5 V USB 3 A (Amazon.fr)](https://www.amazon.fr/dp/B07JLTTZXL) | ≈ 5,13 € les 2 | **équivalent conseillé** : entrée dès 6 V, bonne marge avec les 9 V du circuit 6 |
 
-Branchement : broche **6** du spa → entrée **+** du module, broche **7** (ou 8) → entrée **−**, puis câble USB du module → ESP32.
+Branchement : circuit **6** du spa → entrée **+** du module, circuit **1** (ou 5) → entrée **−**, puis câble USB du module → ESP32.
 
-- **À éviter :** les modules annoncés « 9 V–24 V → 5 V ». Avec 9 V mesurés sur la broche 6, ils sont à la limite et risquent de ne pas donner 5 V stables.
+- **À éviter :** les modules annoncés « 9 V–24 V → 5 V ». Avec 9 V mesurés sur le circuit 6, ils sont à la limite et risquent de ne pas donner 5 V stables.
 - **Ne jamais brancher le chargeur USB et le module en même temps.**
-- La broche 6 a un **courant limité**. L'ESP32 tire environ 100 à 150 mA côté 9 V lors des pointes Wi-Fi, ce que le projet netmindz utilise sans problème. Si le module redémarre tout seul, revenir à la solution 1.
+- Le circuit 6 a un **courant limité**. L'ESP32 tire environ 100 à 150 mA côté 9 V lors des pointes Wi-Fi, ce que le projet netmindz utilise sans problème. Si le module redémarre tout seul, revenir à la solution 1.
 
 ## Quand tout est reçu : déroulé du montage
 
-1. **Préparer le câble Micro-Fit :** repérer au multimètre (continuité) quel fil arrive sur les broches 1, 3, 5, 6 et 7 de la prise. Les couleurs des fils ne veulent rien dire. Isoler les fils 2, 4, 6 et 8.
+1. **Préparer le câble Micro-Fit :** repérer le « 1 » gravé sur la prise, puis au multimètre (continuité) le fil des circuits **1, 2, 3 et 4** (et 6 si alimentation par le spa). Les couleurs des fils ne veulent rien dire. Isoler les fils inutilisés (5, 7, 8, et 6 pour le test).
 2. **Souder le pont diviseur** (R1 = 4,7 kΩ, R2 = 2 × 4,7 kΩ en série) et vérifier les valeurs au multimètre.
 3. **Câbler** l'ESP32 et le module RS485 selon le schéma, avec une masse commune.
 4. **Installer le firmware** sur l'ESP32 depuis l'ordinateur (voir plus bas), **avant** de le brancher au spa.
-5. **Couper le spa au tableau**, brancher la prise sur **J70**, ergot à gauche comme celle du ML700 sur J72.
+5. **Couper le spa au tableau**, brancher la prise sur **J70**, ergot à gauche comme celle du ML700 sur J72, le « 1 » gravé côté triangle (en haut à droite).
 6. Remettre le spa sous tension. Avant de brancher l'ESP32, **mesurer le point milieu du pont diviseur** : environ 2,8 V, jamais plus de 3,5 V.
 7. Brancher l'ESP32 sur le **chargeur USB**, se connecter au Wi-Fi « Jacuzzi-Setup », puis ouvrir **http://jacuzzi.local**.
 8. **Test en lecture seule :** la température et le mode affichés doivent correspondre au ML700.
    - Aucune donnée : **inverser les fils A et B**.
-   - « Broche 5 non détectée » : vérifier le fil de la broche 5 et le pont diviseur.
+   - « Signal de sélection non détecté » : vérifier le fil du circuit 2 et le pont diviseur.
 9. **Capturer les touches** du ML700 (voir ci-dessous), puis tester un changement de mode Économie → Standard depuis la page.
 10. Installation définitive dans le boîtier IP65, câble passé par un presse-étoupe.
 
@@ -209,7 +224,7 @@ Section **Espion du bus (trames)** en bas de la page.
 
 **Méthode pour identifier un équipement** (pompe 3, blower, ozone) : mode simple, repère « avant », démarrer l'équipement, repère « marche », l'arrêter, repère « arrêt », puis enregistrer le fichier.
 
-Limite : en dehors de notre tour, le module ne sait pas à quel port une trame est destinée (seule la broche 5 de J70 lui est reliée).
+Limite : en dehors de notre tour, le module ne sait pas à quel port une trame est destinée (seul le signal de sélection de J70, circuit 2, lui est relié).
 
 ## Mise à jour du firmware par Wi-Fi
 

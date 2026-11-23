@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.8.1"
+#define FW_VERSION "1.8.2"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -84,7 +84,7 @@ int delayTime = DELAY_TIME_DEFAULT;
 #define RX_PIN 19
 #define TX_PIN 23
 #define RTS_PIN_DEF 22  // RS485 direction control, RequestToSend TX or RX, required for MAX485 board.
-#define PIN_5_PIN_DEF 18
+#define PIN_5_PIN_DEF 18  // "pin 5" (netmindz numbering) = panel select = Molex circuit 2 of the panel connector
 #else
 SoftwareSerial tub;
 #define RX_PIN D6
@@ -395,7 +395,7 @@ void watchdogTick() {
             headSince = now;
         } else if (now - headSince > CMD_TIMEOUT_MS) {
             String h = sendBuffer.getHead();
-            String why = headTries == 0 ? " (notre tour n'est pas venu, vérifiez la broche 5)" : " (le spa n'a pas répondu)";
+            String why = headTries == 0 ? " (notre tour n'est pas venu, vérifiez le signal de sélection, circuit 2)" : " (le spa n'a pas répondu)";
             int n = queueClear();
             logAdd('E', "Pas de réponse à " + cmdName(h) + " " + h + " après " + String(headTries) + " envois" + why +
                             ", file vidée (" + String(n) + ")");
@@ -437,16 +437,16 @@ void watchdogTick() {
         bool big = pin5Rate == 0 ? rate > 0 : (rate > pin5Rate * 3 / 2 || rate < pin5Rate * 2 / 3);
         if (rate > 0 && (rateLogAt == 0 || (big && now - rateLogAt > 60000))) {
             rateLogAt = now;
-            logAdd(rate > 20000 ? 'E' : 'S', "Broche 5 : " + String(rate) + " impulsions/s" + (rate > 20000 ? " (trop, signal parasité ?)" : ""));
+            logAdd(rate > 20000 ? 'E' : 'S', "Sélection (circuit 2) : " + String(rate) + " impulsions/s" + (rate > 20000 ? " (trop, signal parasité ?)" : ""));
         }
         pin5Rate = rate;
         if (panelDetected) {
             if (e == 0 && !p5Lost) {
                 p5Lost = true;
-                logAdd('E', "Broche 5 : signal absent");
+                logAdd('E', "Sélection (circuit 2) : signal absent");
             } else if (e > 0 && p5Lost) {
                 p5Lost = false;
-                logAdd('S', "Broche 5 : signal revenu");
+                logAdd('S', "Sélection (circuit 2) : signal revenu");
             }
         }
     }
@@ -958,7 +958,7 @@ void loop() {
     if (panelSelect == HIGH || !panelDetected) {  // Controller talking to other topside panels - we are in effect idle
 
         if(panelSelect == HIGH) {
-            if (!panelDetected) logAdd('S', "Broche 5 détectée, le spa nous donne la main pour les commandes");
+            if (!panelDetected) logAdd('S', "Signal de sélection détecté, le spa nous donne la main pour les commandes");
             panelDetected = true;
         }
         else {
@@ -1318,7 +1318,7 @@ void sendCommand() {
         hexCharacterStringToBytes(byteArray, head.c_str());
         tub.write(byteArray, sizeof(byteArray));
         if (digitalRead(PIN_5_PIN_DEF) != LOW) {
-            logAdd('E', "Broche 5 changée pendant l'envoi, " + cmdName(head) + " perdue");
+            logAdd('E', "Signal de sélection changé pendant l'envoi, " + cmdName(head) + " perdue");
             delayTime = DELAY_TIME_DEFAULT;
             dropHead();
         }

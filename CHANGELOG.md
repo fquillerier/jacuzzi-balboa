@@ -2,6 +2,9 @@
 
 Chaque section s'affiche comme note lors de la mise à jour en ligne (Réglages et informations → Rechercher une mise à jour).
 
+## 1.8.2
+- Numérotation officielle Molex dans la documentation (circuit 1 = triangle imprimé sur la carte) ; les messages parlent du « signal de sélection (circuit 2) » au lieu de la « broche 5 » du projet d'origine.
+
 ## 1.8.1
 - Programmation : changements de mode de chauffe chaque semaine (ex. Standard le vendredi à 18:00, Économie le dimanche à 20:00) ou à une date précise. Prochain changement affiché sous le mode.
 - Codes des touches modifiables depuis Réglages (coller un code capturé, bouton Tester), sans recompiler.

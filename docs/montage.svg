@@ -4,19 +4,19 @@
 
   <!-- J70 connector -->
   <rect x="40" y="90" width="210" height="330" rx="10" fill="#f1f5f9" stroke="#334155" stroke-width="2"/>
-  <text x="145" y="80" text-anchor="middle" font-weight="bold" fill="#111">Câble Micro-Fit → J70</text>
+  <text x="145" y="80" text-anchor="middle" font-weight="bold" fill="#111">Câble Micro-Fit → J70 (n° Molex)</text>
   <g font-weight="bold" fill="#fff" text-anchor="middle">
-    <circle cx="80" cy="130" r="18" fill="#222"/><text x="80" y="135">8</text>
-    <circle cx="150" cy="130" r="18" fill="#222"/><text x="150" y="135">7</text>
+    <circle cx="80" cy="130" r="18" fill="#222"/><text x="80" y="135">5</text>
+    <circle cx="150" cy="130" r="18" fill="#222"/><text x="150" y="135">1</text>
     <circle cx="80" cy="200" r="18" fill="#dc2626"/><text x="80" y="205">6</text>
-    <circle cx="150" cy="200" r="18" fill="#d97706"/><text x="150" y="205">5</text>
-    <circle cx="80" cy="270" r="18" fill="#9ca3af"/><text x="80" y="275">4</text>
+    <circle cx="150" cy="200" r="18" fill="#d97706"/><text x="150" y="205">2</text>
+    <circle cx="80" cy="270" r="18" fill="#9ca3af"/><text x="80" y="275">7</text>
     <circle cx="150" cy="270" r="18" fill="#16a34a"/><text x="150" y="275">3</text>
-    <circle cx="80" cy="340" r="18" fill="#9ca3af"/><text x="80" y="345">2</text>
-    <circle cx="150" cy="340" r="18" fill="#2563eb"/><text x="150" y="345">1</text>
+    <circle cx="80" cy="340" r="18" fill="#9ca3af"/><text x="80" y="345">8</text>
+    <circle cx="150" cy="340" r="18" fill="#2563eb"/><text x="150" y="345">4</text>
   </g>
   <text x="52" y="392" font-size="13" fill="#475569">ergot à gauche</text>
-  <text x="52" y="409" font-size="13" fill="#475569">1 en bas à droite</text>
+  <text x="52" y="409" font-size="13" fill="#475569">1 = triangle (haut)</text>
 
   <!-- RS485 module -->
   <rect x="430" y="90" width="210" height="190" rx="10" fill="#eef2ff" stroke="#3730a3" stroke-width="2"/>
@@ -64,17 +64,17 @@
   <!-- ground bus -->
   <path d="M168 130 H220 V590 H790 V245" fill="none" stroke="#222" stroke-width="3"/>
   <circle cx="790" cy="245" r="6" fill="#222"/>
-  <text x="560" y="612" text-anchor="middle" font-size="13" fill="#475569">Masse commune : broche 7 (ou 8) du spa · GND de l'ESP32 · GND du module RS485 · bas de R2</text>
+  <text x="560" y="612" text-anchor="middle" font-size="13" fill="#475569">Masse commune : circuit 1 (ou 5) du spa · GND de l'ESP32 · GND du module RS485 · bas de R2</text>
 
   <!-- pin 6 note -->
   <g font-size="13">
-    <text x="30" y="450" fill="#dc2626" font-weight="bold">Broche 6 (≈ 9 V) :</text>
+    <text x="30" y="450" fill="#dc2626" font-weight="bold">Circuit 6 (≈ 9 V) :</text>
     <text x="30" y="468" fill="#dc2626">NE PAS brancher</text>
     <text x="30" y="486" fill="#dc2626">pour le test USB.</text>
     <text x="30" y="510" fill="#dc2626">Plus tard : abaisseur</text>
     <text x="30" y="528" fill="#dc2626">5 V → broche 5V ESP32</text>
     <text x="30" y="546" fill="#dc2626">(jamais avec l'USB).</text>
-    <text x="30" y="572" fill="#475569">Broches 2 et 4 : libres.</text>
+    <text x="30" y="572" fill="#475569">Circuits 7 et 8 : libres.</text>
   </g>
   <path d="M700 470 H770 V340 H782 A8 8 0 0 1 798 340 H830" fill="none" stroke="#d97706" stroke-width="4"/>
 </svg>

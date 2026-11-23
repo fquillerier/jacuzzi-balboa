@@ -103,6 +103,18 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
 .spy .sa{color:var(--muted);font-weight:700}
 .spy .ch{background:var(--warm-bg);color:var(--warm);font-weight:700;border-radius:3px}
 .spy .gap{color:#dc2626;font-weight:700}
+.krow{padding:8px 0;border-bottom:1px solid var(--line)}
+.krow:last-child{border-bottom:0}
+.krow .kn{font-size:14px;font-weight:600}
+.krow input[type=text]{width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;margin-top:6px}
+.krow .kd{font-size:12px;color:var(--muted);margin-top:2px}
+.srow{border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:10px}
+.days{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.days label{flex:1;min-width:34px;text-align:center;border:1px solid var(--line);border-radius:8px;padding:6px 0;font-size:13px;cursor:pointer;user-select:none}
+.days input{display:none}
+.days label.sel{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);font-weight:600}
+.sline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
 .spystat{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5}
 .spystat b{color:var(--text)}
 .rec{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:middle}
@@ -118,7 +130,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     <div class="conn"><span id="spaTime"></span><span class="dot" id="dot"></span><span id="connTxt">Connexion…</span></div>
   </header>
 
-  <div class="banner" id="noPanel">Aucune donnée reçue du spa. Vérifiez le fil de la broche 5 et le câble RS485.</div>
+  <div class="banner" id="noPanel">Aucune donnée reçue du spa. Vérifiez le fil du signal de sélection (circuit 2) et le câble RS485.</div>
 
   <section class="card">
     <div class="temp">
@@ -148,6 +160,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   <div class="grid" id="tiles">
     <button class="tile" id="jet1"><span class="name">Pompe 1</span><span class="st">Arrêtée</span></button>
     <button class="tile" id="jet2"><span class="name">Pompe 2</span><span class="st">Arrêtée</span></button>
+    <button class="tile hide" id="jet3"><span class="name">Pompe 3</span><span class="st">Marche / arrêt</span></button>
     <button class="tile" id="aux"><span class="name">Blower</span><span class="st">Marche / arrêt</span></button>
     <button class="tile" id="light"><span class="name">Éclairage</span><span class="st">Éteint</span></button>
   </div>
@@ -160,6 +173,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
       <button data-m="2">Veille</button>
     </div>
     <div class="state" id="state"></div>
+    <div class="sub" id="schedNext"></div>
   </section>
 
   <section class="card" id="graphCard">
@@ -189,6 +203,11 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
       <p class="small">Icône sur l'écran du téléphone : sur Android, dans Chrome, menu ⋮ → « Ajouter à l'écran d'accueil ». Sur iPhone, dans Safari, bouton Partager → « Sur l'écran d'accueil ».</p>
     </section>
     <section class="card">
+      <div class="label">Codes des touches (avancé)</div>
+      <p class="small" style="margin:4px 0 6px">Codes envoyés au spa pour chaque touche du clavier. Pour les relever : Journal (dépannage) → « Capturer les touches du clavier du spa », puis copiez ici le code affiché avec la lettre « P ». Laissez vide pour revenir au code par défaut.</p>
+      <div id="keyRows"></div>
+    </section>
+    <section class="card">
       <div class="kv"><span>Firmware</span><span id="fw">-</span></div>
       <div class="kv"><span>Allumé depuis</span><span id="uptime">-</span></div>
       <div class="kv"><span>Home Assistant (MQTT)</span><span id="mqtt">-</span></div>
@@ -205,6 +224,24 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
       <button class="btn" id="restart">Redémarrer le module</button>
       <button class="btn danger" id="wifiReset">Changer de réseau Wi-Fi</button>
       <p class="small">« Changer de réseau Wi-Fi » efface le réseau enregistré. Le module ouvre alors le point d'accès « Jacuzzi-Setup » : connectez-y votre téléphone pour choisir le nouveau réseau.</p>
+    </section>
+  </details>
+
+  <details id="schedBox">
+    <summary>Programmation</summary>
+    <section class="card">
+      <div class="label">Changements de mode de chauffe programmés</div>
+      <div class="frow"><input type="checkbox" id="schedEn"><label for="schedEn" style="font-size:15px">Programmation active</label></div>
+      <div class="small" id="schedClock"></div>
+      <div class="label" style="margin-top:14px">Chaque semaine</div>
+      <div id="schedW"></div>
+      <button class="btn sm" id="schedAddW">+ Ajouter un horaire</button>
+      <div class="label" style="margin-top:14px">Une seule fois</div>
+      <div id="schedO"></div>
+      <button class="btn sm" id="schedAddO">+ Ajouter une date</button>
+      <div><button class="btn primary" id="schedSave">Enregistrer la programmation</button></div>
+      <p class="small">Le module change le mode à l'heure dite, comme si vous appuyiez sur les touches. Exemple pour un spa peu utilisé : Standard le vendredi à 18:00, Économie le dimanche à 20:00. Prévoyez la montée en température (environ 12 à 24 h en hiver).</p>
+      <p class="small">Les horaires de <b>filtration</b> du spa restent ceux réglés sur le clavier : leur réglage depuis cette page viendra après le relevé des menus du clavier avec l'espion.</p>
     </section>
   </details>
 
@@ -272,7 +309,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   var S = {};
   var desired = null, desiredTimer = null, lastMsg = 0, ws = null, pollTimer = null;
   var MODE_NAMES = ['Standard','Économie','Veille'];
-  var STATE_FR = {'Standard':'Standard','Economy':'Économie','Sleep':'Veille','Circulation':'Circulation','Circulation in sleep':'Circulation (veille)','Cleaning':'Nettoyage','Std in Eco':'Standard temporaire (depuis Économie)','Set Mode':'Changement de mode','Set Temperature':'Réglage de la consigne','Temp Up':'Consigne +','Temp Down':'Consigne −','Standby?':'Arrêt temporaire','unknown':'Inconnu','Panel select (pin5) not detected':'Broche 5 non détectée'};
+  var STATE_FR = {'Standard':'Standard','Economy':'Économie','Sleep':'Veille','Circulation':'Circulation','Circulation in sleep':'Circulation (veille)','Cleaning':'Nettoyage','Std in Eco':'Standard temporaire (depuis Économie)','Set Mode':'Changement de mode','Set Temperature':'Réglage de la consigne','Temp Up':'Consigne +','Temp Down':'Consigne −','Standby?':'Arrêt temporaire','unknown':'Inconnu','Panel select (pin5) not detected':'Signal de sélection (circuit 2) non détecté'};
 
   function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(function(){el.classList.remove('show');},2200); }
 
@@ -322,7 +359,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     $('boots').textContent = S.boots || '-';
     if (document.activeElement!==$('sniff')) $('sniff').checked = !!S.sniff;
     var busy=q>0;
-    ['jet1','jet2','aux','light'].forEach(function(id){ $(id).classList.toggle('busy', busy); });
+    ['jet1','jet2','jet3','aux','light'].forEach(function(id){ $(id).classList.toggle('busy', busy); });
   }
 
   function lvl(l,p){ var n=parseInt(l,10); return isNaN(n) ? (p>0?1:0) : n; }
@@ -331,7 +368,9 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
 
   var lastFw=null;
   function onStatus(d){
+    var j3=hasJet3();
     S=d; lastMsg=Date.now(); setConn(true); render(); renderErr(); renderOta();
+    if(hasJet3()!==j3) applyCfg();
     if(d.fw && d.fw!==lastFw){ lastFw=d.fw; checkUpdate(false); }  // first status, and again after an update
   }
 
@@ -390,13 +429,13 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   setInterval(function(){ if(Date.now()-lastMsg>20000) setConn(false); },5000);
 
   function cmd(a, label){
-    api('/api/cmd?a='+a).then(function(r){ toast(r.ok ? label : r.msg==='nopanel' ? 'Broche 5 non connectée, commandes désactivées' : (r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'La commande a échoué')); });
+    api('/api/cmd?a='+a).then(function(r){ toast(r.ok ? label : r.msg==='nopanel' ? 'Signal de sélection non détecté, commandes désactivées' : (r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'La commande a échoué')); });
   }
 
   function step(delta){
     var tgt=fmtTemp(S.target);
     if (tgt===null && desired===null){
-      api('/api/cmd?a=up').then(function(r){ toast(r.msg==='nopanel' ? 'Broche 5 non connectée, commandes désactivées' : 'Lecture de la consigne…'); });
+      api('/api/cmd?a=up').then(function(r){ toast(r.msg==='nopanel' ? 'Signal de sélection non détecté, commandes désactivées' : 'Lecture de la consigne…'); });
       return;
     }
     var base = desired!==null ? desired : tgt;
@@ -407,16 +446,16 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
       var v=desired;
       api('/api/target?t='+v.toFixed(1)).then(function(r){
         desired=null; render();
-        toast(r.ok ? ('Consigne '+v.toFixed(1)+' °C') : r.msg==='nopanel' ? 'Broche 5 non connectée, commandes désactivées' : (r.msg==='target unknown'?'Lecture de la consigne en cours, réessayez':'Impossible de régler la consigne'));
+        toast(r.ok ? ('Consigne '+v.toFixed(1)+' °C') : r.msg==='nopanel' ? 'Signal de sélection non détecté, commandes désactivées' : (r.msg==='target unknown'?'Lecture de la consigne en cours, réessayez':'Impossible de régler la consigne'));
       });
     },1500);
   }
 
   $('plus').onclick=function(){ step(0.5); };
   $('minus').onclick=function(){ step(-0.5); };
-  ['jet1','jet2','aux','light'].forEach(function(k){ $(k).onclick=function(){ cmd(k, featName(k)); }; });
+  ['jet1','jet2','jet3','aux','light'].forEach(function(k){ $(k).onclick=function(){ cmd(k, featName(k)); }; });
   var mb=$('modes').querySelectorAll('button');
-  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mode : '+MODE_NAMES[m]):r.msg==='mode unknown'?'Mode actuel encore inconnu, réessayez dans quelques secondes':(r.msg==='nopanel'?'Broche 5 non connectée, commandes désactivées':'Impossible de changer de mode')); }); }; }
+  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mode : '+MODE_NAMES[m]):r.msg==='mode unknown'?'Mode actuel encore inconnu, réessayez dans quelques secondes':(r.msg==='nopanel'?'Signal de sélection non détecté, commandes désactivées':r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'Impossible de changer de mode')); }); }; }
   $('otaLink').href='http://'+location.hostname+':8080/update';
   $('wifiReset').onclick=function(){
     if(!confirm('Effacer le réseau Wi-Fi enregistré ? Le module redémarre en mode configuration.')) return;
@@ -473,7 +512,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   }
   function sendHex(h){
     if(!confirm('Envoyer le code '+h+' au spa ?')) return;
-    post('/api/sendhex?h='+h).then(function(r){ toast(r.ok?'Envoyé':r.msg==='nopanel'?'Broche 5 non connectée, commandes désactivées':(r.msg==='busy'?'File d\'attente pleine':'Code incorrect')); });
+    post('/api/sendhex?h='+h).then(function(r){ toast(r.ok?'Envoyé':r.msg==='nopanel'?'Signal de sélection non détecté, commandes désactivées':(r.msg==='busy'?'File d\'attente pleine':'Code incorrect')); });
   }
   $('logBox').addEventListener('toggle',function(){
     if($('logBox').open){ loadLog(); LG.timer=setInterval(loadLog,1500); } else { clearInterval(LG.timer); }
@@ -486,7 +525,7 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
     var S=St||{};
     var head=['Journal '+CFG.title+' · '+new Date().toLocaleString('fr-FR'),
       'Firmware '+(S.fw||'-')+' · allumé depuis '+fmtUptime(S.uptime)+' · dernier redémarrage : '+(S.boot||'-')+' · redémarrages : '+(S.boots||'-'),
-      'Broche 5 : '+(S.panel?'détectée':'non détectée')+(S.p5!==undefined?' ('+S.p5+' impulsions/s)':'')+' · file : '+(S.queue||0)+' · état : '+(S.state||'-')+' · eau '+(S.temp||'-')+' °C',
+      'Sélection (circuit 2) : '+(S.panel?'détectée':'non détectée')+(S.p5!==undefined?' ('+S.p5+' impulsions/s)':'')+' · file : '+(S.queue||0)+' · état : '+(S.state||'-')+' · eau '+(S.temp||'-')+' °C',
       ''];
     return head.concat(LG.lines.map(function(l){ return l.when+' '+l.ty+' '+l.text; })).join('\n')+'\n';
   }
@@ -649,11 +688,109 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   });
   window.addEventListener('beforeunload',function(e){ if(SP.frames.length>SP.saved){ e.preventDefault(); e.returnValue=''; } });
 
+  // ---- button codes (stored in the module) ----
+  var KEYS=[];
+  function hasJet3(){ if(S.jet3!==undefined) return !!S.jet3; var k=KEYS.filter(function(x){ return x.id==='jet3'; })[0]; return !!(k&&k.code); }
+  function loadKeys(){ api('/api/keys').then(function(r){ if(r && r.keys){ KEYS=r.keys; renderKeys(); applyCfg(); } }); }
+  function renderKeys(){
+    var box=$('keyRows'); box.textContent='';
+    KEYS.forEach(function(k){
+      var row=document.createElement('div'); row.className='krow';
+      var n=document.createElement('div'); n.className='kn'; n.textContent=k.name;
+      var inp=document.createElement('input'); inp.type='text'; inp.value=k.code; inp.maxLength=18; inp.placeholder=k.def||'inconnu : à capturer'; inp.setAttribute('autocomplete','off'); inp.setAttribute('aria-label','Code '+k.name);
+      var d=document.createElement('div'); d.className='kd'; d.textContent=k.code===k.def?(k.def?'code par défaut':'aucun code (touche inconnue)'):'modifié · défaut : '+(k.def||'aucun');
+      var save=document.createElement('button'); save.className='btn sm'; save.textContent='Enregistrer';
+      save.onclick=function(){
+        var h=inp.value.trim().toLowerCase();
+        if(h && !/^fb06[0-9a-f]{14}$/.test(h)){ toast('Code invalide : 18 caractères commençant par fb06'); return; }
+        post('/api/keys?id='+k.id+'&h='+h).then(function(r){ toast(r.ok?'Code enregistré':'Code refusé'); loadKeys(); });
+      };
+      var test=document.createElement('button'); test.className='btn sm'; test.textContent='Tester';
+      test.onclick=function(){ var h=inp.value.trim().toLowerCase(); if(!/^fb06[0-9a-f]{14}$/.test(h)){ toast('Aucun code à tester'); return; } sendHex(h); };
+      row.appendChild(n); row.appendChild(inp); row.appendChild(d); row.appendChild(save); row.appendChild(test);
+      box.appendChild(row);
+    });
+  }
+
+  // ---- heating mode schedule (runs on the module) ----
+  var SC={en:1,w:[],o:[]}, DAYS=['L','M','M','J','V','S','D'], DAYS_LONG=['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+  function p2(n){ return (n<10?'0':'')+n; }
+  function modeSelect(v){ var s=document.createElement('select'); MODE_NAMES.forEach(function(n,i){ var o=document.createElement('option'); o.value=i; o.textContent=n; if(i===v) o.selected=true; s.appendChild(o); }); return s; }
+  function delBtn(fn){ var b=document.createElement('button'); b.className='btn sm danger'; b.textContent='Supprimer'; b.onclick=fn; return b; }
+  function renderSched(){
+    $('schedEn').checked=!!SC.en;
+    var bw=$('schedW'); bw.textContent='';
+    if(!SC.w.length){ var e=document.createElement('div'); e.className='small'; e.textContent='Aucun horaire.'; bw.appendChild(e); }
+    SC.w.forEach(function(w,idx){
+      var row=document.createElement('div'); row.className='srow';
+      var days=document.createElement('div'); days.className='days';
+      DAYS.forEach(function(d,i){
+        var l=document.createElement('label'); l.textContent=d; l.title=DAYS_LONG[i]; l.classList.toggle('sel',!!(w[0]&(1<<i)));
+        l.onclick=function(){ w[0]^=(1<<i); l.classList.toggle('sel',!!(w[0]&(1<<i))); };
+        days.appendChild(l);
+      });
+      var line=document.createElement('div'); line.className='sline';
+      var t=document.createElement('input'); t.type='time'; t.value=p2(w[1])+':'+p2(w[2]); t.onchange=function(){ var a=t.value.split(':'); w[1]=+a[0]||0; w[2]=+a[1]||0; };
+      var arrow=document.createElement('span'); arrow.textContent='→';
+      var m=modeSelect(w[3]); m.onchange=function(){ w[3]=+m.value; };
+      var onl=document.createElement('label'); onl.className='small'; var on=document.createElement('input'); on.type='checkbox'; on.checked=!!w[4]; on.onchange=function(){ w[4]=on.checked?1:0; }; onl.appendChild(on); onl.appendChild(document.createTextNode(' actif'));
+      line.appendChild(t); line.appendChild(arrow); line.appendChild(m); line.appendChild(onl);
+      row.appendChild(days); row.appendChild(line); row.appendChild(delBtn(function(){ SC.w.splice(idx,1); renderSched(); }));
+      bw.appendChild(row);
+    });
+    var bo=$('schedO'); bo.textContent='';
+    if(!SC.o.length){ var e2=document.createElement('div'); e2.className='small'; e2.textContent='Aucune date.'; bo.appendChild(e2); }
+    SC.o.forEach(function(o,idx){
+      var row=document.createElement('div'); row.className='srow';
+      var line=document.createElement('div'); line.className='sline';
+      var d=new Date(o[0]*1000), dt=document.createElement('input'); dt.type='datetime-local';
+      dt.value=d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+'T'+p2(d.getHours())+':'+p2(d.getMinutes());
+      dt.onchange=function(){ var x=new Date(dt.value); if(!isNaN(x)) o[0]=Math.floor(x.getTime()/1000); };
+      var arrow=document.createElement('span'); arrow.textContent='→';
+      var m=modeSelect(o[1]); m.onchange=function(){ o[1]=+m.value; };
+      line.appendChild(dt); line.appendChild(arrow); line.appendChild(m);
+      row.appendChild(line); row.appendChild(delBtn(function(){ SC.o.splice(idx,1); renderSched(); }));
+      bo.appendChild(row);
+    });
+  }
+  function fmtWhen(ep){
+    var d=new Date(ep*1000), now=new Date(), j=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'][d.getDay()];
+    var same=d.toDateString()===now.toDateString(), tom=new Date(now.getTime()+86400000).toDateString()===d.toDateString();
+    return (same?'aujourd\'hui':tom?'demain':j+' '+d.getDate()+'/'+p2(d.getMonth()+1))+' à '+p2(d.getHours())+':'+p2(d.getMinutes());
+  }
+  function loadSched(edit){
+    api('/api/sched').then(function(r){
+      if(!r || r.w===undefined) return;
+      if(edit!==false){ SC={en:r.en, w:r.w, o:r.o}; renderSched(); }
+      $('schedNext').textContent=(r.en && r.next)?('Prochain changement programmé : '+fmtWhen(r.next)+' → '+MODE_NAMES[r.nextMode]):'';
+      var txt='';
+      if(r.now){ var mod=new Date(r.now*1000); txt='Heure du module : '+p2(mod.getHours())+':'+p2(mod.getMinutes());
+        if(r.spa && /^\d\d:\d\d$/.test(r.spa)){ var a=r.spa.split(':'), diff=((+a[0])*60+(+a[1]))-(mod.getHours()*60+mod.getMinutes()); if(diff>720) diff-=1440; if(diff<-720) diff+=1440;
+          txt+=' · heure du spa : '+r.spa+(Math.abs(diff)>=2?' (écart de '+Math.abs(diff)+' min : à corriger sur le clavier)':' (à l\'heure)'); }
+      } else txt='Heure du module inconnue (pas d\'accès à Internet) : la programmation attend que l\'heure soit connue.';
+      $('schedClock').textContent=txt;
+    });
+  }
+  $('schedAddW').onclick=function(){ if(SC.w.length>=8){ toast('8 horaires au maximum'); return; } SC.w.push([16,18,0,0,1]); renderSched(); };
+  $('schedAddO').onclick=function(){ if(SC.o.length>=6){ toast('6 dates au maximum'); return; } var d=new Date(Date.now()+86400000); d.setMinutes(0,0,0); SC.o.push([Math.floor(d.getTime()/1000),0]); renderSched(); };
+  $('schedEn').onchange=function(){ SC.en=this.checked?1:0; };
+  $('schedSave').onclick=function(){
+    var bad=SC.w.filter(function(w){ return !w[0]; }).length;
+    if(bad){ toast('Choisissez au moins un jour pour chaque horaire'); return; }
+    var now=Date.now()/1000;
+    if(SC.o.some(function(o){ return o[0]<now; })){ toast('Une date est déjà passée'); return; }
+    var q='en='+(SC.en?1:0)+'&w='+SC.w.map(function(w){ return w.join('-'); }).join(',')+'&o='+SC.o.map(function(o){ return o.join('-'); }).join(',');
+    post('/api/sched?'+q).then(function(r){ toast(r.ok?'Programmation enregistrée':'Programmation refusée'); loadSched(); });
+  };
+  $('schedBox').addEventListener('toggle',function(){ if($('schedBox').open) loadSched(); });
+  loadKeys(); loadSched(false); setInterval(function(){ loadSched(false); },300000);
+
   // ---- page settings (stored on the module, same on every phone) ----
   var FEATS=[
     {k:'weather', def:'Température extérieure'},
     {k:'jet1',  def:'Pompe 1'},
     {k:'jet2',  def:'Pompe 2'},
+    {k:'jet3',  def:'Pompe 3'},
     {k:'aux',   def:'Blower'},
     {k:'light', def:'Éclairage'},
     {k:'mode',  def:'Mode de chauffe'},
@@ -666,11 +803,11 @@ select{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line)
   function applyCfg(){
     $('title').textContent=CFG.title; document.title=CFG.title; $('appTitle').setAttribute('content',CFG.title);
     var anyTile=false;
-    ['jet1','jet2','aux','light'].forEach(function(k){
-      var f=feat(k), el=$(k);
+    ['jet1','jet2','jet3','aux','light'].forEach(function(k){
+      var f=feat(k), el=$(k), v=f.v && (k!=='jet3' || hasJet3());
       el.querySelector('.name').textContent=f.n;
-      el.classList.toggle('hide',!f.v);
-      if(f.v) anyTile=true;
+      el.classList.toggle('hide',!v);
+      if(v) anyTile=true;
     });
     $('tiles').classList.toggle('hide',!anyTile);
     $('modeLabel').textContent=feat('mode').n; $('modeCard').classList.toggle('hide',!feat('mode').v);

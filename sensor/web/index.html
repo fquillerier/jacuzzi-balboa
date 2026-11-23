@@ -127,7 +127,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
     <div class="conn"><span id="spaTime"></span><span class="dot" id="dot"></span><span id="connTxt">Connexion…</span></div>
   </header>
 
-  <div class="banner" id="noPanel">Aucune donnée reçue du spa. Vérifiez le fil de la broche 5 et le câble RS485.</div>
+  <div class="banner" id="noPanel">Aucune donnée reçue du spa. Vérifiez le fil du signal de sélection (circuit 2) et le câble RS485.</div>
 
   <section class="card">
     <div class="temp">
@@ -306,7 +306,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
   var S = {};
   var desired = null, desiredTimer = null, lastMsg = 0, ws = null, pollTimer = null;
   var MODE_NAMES = ['Standard','Économie','Veille'];
-  var STATE_FR = {'Standard':'Standard','Economy':'Économie','Sleep':'Veille','Circulation':'Circulation','Circulation in sleep':'Circulation (veille)','Cleaning':'Nettoyage','Std in Eco':'Standard temporaire (depuis Économie)','Set Mode':'Changement de mode','Set Temperature':'Réglage de la consigne','Temp Up':'Consigne +','Temp Down':'Consigne −','Standby?':'Arrêt temporaire','unknown':'Inconnu','Panel select (pin5) not detected':'Broche 5 non détectée'};
+  var STATE_FR = {'Standard':'Standard','Economy':'Économie','Sleep':'Veille','Circulation':'Circulation','Circulation in sleep':'Circulation (veille)','Cleaning':'Nettoyage','Std in Eco':'Standard temporaire (depuis Économie)','Set Mode':'Changement de mode','Set Temperature':'Réglage de la consigne','Temp Up':'Consigne +','Temp Down':'Consigne −','Standby?':'Arrêt temporaire','unknown':'Inconnu','Panel select (pin5) not detected':'Signal de sélection (circuit 2) non détecté'};
 
   function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(function(){el.classList.remove('show');},2200); }
 
@@ -426,13 +426,13 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
   setInterval(function(){ if(Date.now()-lastMsg>20000) setConn(false); },5000);
 
   function cmd(a, label){
-    api('/api/cmd?a='+a).then(function(r){ toast(r.ok ? label : r.msg==='nopanel' ? 'Broche 5 non connectée, commandes désactivées' : (r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'La commande a échoué')); });
+    api('/api/cmd?a='+a).then(function(r){ toast(r.ok ? label : r.msg==='nopanel' ? 'Signal de sélection non détecté, commandes désactivées' : (r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'La commande a échoué')); });
   }
 
   function step(delta){
     var tgt=fmtTemp(S.target);
     if (tgt===null && desired===null){
-      api('/api/cmd?a=up').then(function(r){ toast(r.msg==='nopanel' ? 'Broche 5 non connectée, commandes désactivées' : 'Lecture de la consigne…'); });
+      api('/api/cmd?a=up').then(function(r){ toast(r.msg==='nopanel' ? 'Signal de sélection non détecté, commandes désactivées' : 'Lecture de la consigne…'); });
       return;
     }
     var base = desired!==null ? desired : tgt;
@@ -443,7 +443,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
       var v=desired;
       api('/api/target?t='+v.toFixed(1)).then(function(r){
         desired=null; render();
-        toast(r.ok ? ('Consigne '+v.toFixed(1)+' °C') : r.msg==='nopanel' ? 'Broche 5 non connectée, commandes désactivées' : (r.msg==='target unknown'?'Lecture de la consigne en cours, réessayez':'Impossible de régler la consigne'));
+        toast(r.ok ? ('Consigne '+v.toFixed(1)+' °C') : r.msg==='nopanel' ? 'Signal de sélection non détecté, commandes désactivées' : (r.msg==='target unknown'?'Lecture de la consigne en cours, réessayez':'Impossible de régler la consigne'));
       });
     },1500);
   }
@@ -452,7 +452,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
   $('minus').onclick=function(){ step(-0.5); };
   ['jet1','jet2','jet3','aux','light'].forEach(function(k){ $(k).onclick=function(){ cmd(k, featName(k)); }; });
   var mb=$('modes').querySelectorAll('button');
-  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mode : '+MODE_NAMES[m]):r.msg==='mode unknown'?'Mode actuel encore inconnu, réessayez dans quelques secondes':(r.msg==='nopanel'?'Broche 5 non connectée, commandes désactivées':r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'Impossible de changer de mode')); }); }; }
+  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mode : '+MODE_NAMES[m]):r.msg==='mode unknown'?'Mode actuel encore inconnu, réessayez dans quelques secondes':(r.msg==='nopanel'?'Signal de sélection non détecté, commandes désactivées':r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'Impossible de changer de mode')); }); }; }
   $('otaLink').href='http://'+location.hostname+':8080/update';
   $('wifiReset').onclick=function(){
     if(!confirm('Effacer le réseau Wi-Fi enregistré ? Le module redémarre en mode configuration.')) return;
@@ -509,7 +509,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
   }
   function sendHex(h){
     if(!confirm('Envoyer le code '+h+' au spa ?')) return;
-    post('/api/sendhex?h='+h).then(function(r){ toast(r.ok?'Envoyé':r.msg==='nopanel'?'Broche 5 non connectée, commandes désactivées':(r.msg==='busy'?'File d\'attente pleine':'Code incorrect')); });
+    post('/api/sendhex?h='+h).then(function(r){ toast(r.ok?'Envoyé':r.msg==='nopanel'?'Signal de sélection non détecté, commandes désactivées':(r.msg==='busy'?'File d\'attente pleine':'Code incorrect')); });
   }
   $('logBox').addEventListener('toggle',function(){
     if($('logBox').open){ loadLog(); LG.timer=setInterval(loadLog,1500); } else { clearInterval(LG.timer); }
@@ -522,7 +522,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
     var S=St||{};
     var head=['Journal '+CFG.title+' · '+new Date().toLocaleString('fr-FR'),
       'Firmware '+(S.fw||'-')+' · allumé depuis '+fmtUptime(S.uptime)+' · dernier redémarrage : '+(S.boot||'-')+' · redémarrages : '+(S.boots||'-'),
-      'Broche 5 : '+(S.panel?'détectée':'non détectée')+(S.p5!==undefined?' ('+S.p5+' impulsions/s)':'')+' · file : '+(S.queue||0)+' · état : '+(S.state||'-')+' · eau '+(S.temp||'-')+' °C',
+      'Sélection (circuit 2) : '+(S.panel?'détectée':'non détectée')+(S.p5!==undefined?' ('+S.p5+' impulsions/s)':'')+' · file : '+(S.queue||0)+' · état : '+(S.state||'-')+' · eau '+(S.temp||'-')+' °C',
       ''];
     return head.concat(LG.lines.map(function(l){ return l.when+' '+l.ty+' '+l.text; })).join('\n')+'\n';
   }

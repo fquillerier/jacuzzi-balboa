@@ -87,7 +87,7 @@ void handleSend() {
 }
 
 void sendApiResult(bool ok, const String& msg) {
-  if (!ok && msg == "nopanel") logAdd('W', "Commande refusée : broche 5 non détectée");
+  if (!ok && msg == "nopanel") logAdd('W', "Commande refusée : signal de sélection non détecté");
   String j = "{\"ok\": " + String(ok ? "true" : "false") + ", \"msg\": \"" + jsonEscape(msg) + "\"}";
   webserver.send(ok ? 200 : 400, "application/json", j);
 }
