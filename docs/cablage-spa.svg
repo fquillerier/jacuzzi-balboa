@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1430" viewBox="0 0 1400 1430" font-family="DejaVu Sans, Arial, sans-serif" font-size="15">
+<rect width="1400" height="1430" fill="#fff"/>
+<text x="700" y="38" text-anchor="middle" font-size="24" font-weight="bold" fill="#111">Montage final alimenté par le spa – J70 · RS485 · ESP32 DevKitC V4 · abaisseur 5 V</text>
+<text x="700" y="64" text-anchor="middle" font-size="14" fill="#475569">Numéros de circuit Molex : 1 = triangle sur la carte du spa = « 1 » gravé sur la prise. Spa hors tension pendant le câblage.</text>
+<rect x="20" y="470" width="120" height="70" rx="10" fill="#1f2937"/>
+<rect x="24" y="420" width="86" height="44" rx="5" fill="#111"/>
+<rect x="32" y="427" width="13" height="13" rx="2" fill="#374151"/>
+<rect x="51" y="427" width="13" height="13" rx="2" fill="#374151"/>
+<rect x="70" y="427" width="13" height="13" rx="2" fill="#374151"/>
+<rect x="89" y="427" width="13" height="13" rx="2" fill="#374151"/>
+<rect x="32" y="445" width="13" height="13" rx="2" fill="#374151"/>
+<rect x="51" y="445" width="13" height="13" rx="2" fill="#374151"/>
+<rect x="70" y="445" width="13" height="13" rx="2" fill="#374151"/>
+<rect x="89" y="445" width="13" height="13" rx="2" fill="#374151"/>
+<text x="20" y="410" text-anchor="start" font-size="13" fill="#475569">Prise Micro-Fit 8 pts</text>
+<text x="20" y="560" text-anchor="start" font-size="13" fill="#475569">câble (fils de couleur</text>
+<text x="20" y="577" text-anchor="start" font-size="13" fill="#475569">non significative)</text>
+<path d="M140,505 C 190,505 190,100 240,100 H 470" fill="none" stroke="#222" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="250" y="92" text-anchor="start" font-size="13.5" fill="#111" font-weight="bold">Circuit 1 · masse (GND)</text>
+<path d="M140,505 C 190,505 190,540 240,540 H 470" fill="none" stroke="#d97706" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="250" y="532" text-anchor="start" font-size="13.5" fill="#111" font-weight="bold">Circuit 2 · sélection ≈ 5 V</text>
+<path d="M140,505 C 190,505 190,700 240,700 H 470" fill="none" stroke="#16a34a" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="250" y="692" text-anchor="start" font-size="13.5" fill="#111" font-weight="bold">Circuit 3 · RS485 A (≈ 4,2 V)</text>
+<path d="M140,505 C 190,505 190,760 240,760 H 470" fill="none" stroke="#2563eb" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="250" y="752" text-anchor="start" font-size="13.5" fill="#111" font-weight="bold">Circuit 4 · RS485 B (≈ 0,8 V)</text>
+<path d="M140,505 C 190,505 190,860 240,860 H 470" fill="none" stroke="#dc2626" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="250" y="852" text-anchor="start" font-size="13.5" fill="#111" font-weight="bold">Circuit 6 · ≈ 9 V → abaisseur IN+</text>
+<path d="M140,505 C 190,505 190,900 240,900 H 470" fill="none" stroke="#222" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="250" y="892" text-anchor="start" font-size="13.5" fill="#111" font-weight="bold">Circuit 5 · masse → abaisseur IN−</text>
+<path d="M140,505 C 190,505 190,940 240,940 H 470" fill="none" stroke="#9ca3af" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="250" y="932" text-anchor="start" font-size="13.5" fill="#6b7280">Circuit 7 : isoler</text>
+<path d="M140,505 C 190,505 190,980 240,980 H 470" fill="none" stroke="#9ca3af" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="250" y="972" text-anchor="start" font-size="13.5" fill="#6b7280">Circuit 8 : isoler</text>
+<rect x="470" y="933" width="22" height="14" rx="3" fill="#fde68a" stroke="#a16207"/>
+<rect x="470" y="973" width="22" height="14" rx="3" fill="#fde68a" stroke="#a16207"/>
+<text x="250" y="1004" text-anchor="start" font-size="12" fill="#a16207">7 et 8 : isolés (gaine thermo)</text>
+<path d="M470,860 H 520 V 1090 H 600" fill="none" stroke="#dc2626" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M470,900 H 500 V 1120 H 600" fill="none" stroke="#222" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="600" y="1030" width="300" height="110" rx="8" fill="#065f46" stroke="#064e3b" stroke-width="2"/>
+<text x="750" y="1054" text-anchor="middle" font-size="15" fill="#fff" font-weight="bold">Abaisseur 5 V, sortie USB</text>
+<text x="750" y="1072" text-anchor="middle" font-size="12" fill="#d1fae5">entrée 6–24 V (ex. B07JLTTZXL)</text>
+<text x="612" y="1095" text-anchor="start" font-size="12" fill="#fff" font-weight="bold">IN+</text>
+<text x="612" y="1125" text-anchor="start" font-size="12" fill="#fff" font-weight="bold">IN−</text>
+<rect x="880" y="1095" width="34" height="22" rx="3" fill="#9ca3af" stroke="#374151"/>
+<text x="897" y="1132" text-anchor="middle" font-size="11" fill="#d1fae5">USB</text>
+<path d="M914,1106 H 1375 V 80 H 1130 V 138" fill="none" stroke="#6b7280" stroke-width="7" stroke-linejoin="round" stroke-dasharray="14 6"/>
+<text x="1365" y="600" text-anchor="end" font-size="13" fill="#374151">câble USB-A → USB-C</text>
+<text x="1365" y="618" text-anchor="end" font-size="12" fill="#6b7280">(court)</text>
+<path d="M470,100 H 1310 V 370 H 1240" fill="none" stroke="#222" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="880" cy="100" r="6" fill="#222"/>
+<text x="1318" y="240" text-anchor="start" font-size="12" fill="#475569">masse</text>
+<path d="M470,540 H 560" fill="none" stroke="#d97706" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="560" y="525" width="140" height="30" rx="4" fill="#fff7ed" stroke="#d97706" stroke-width="2"/>
+<text x="630" y="546" text-anchor="middle" font-size="15" fill="#111" font-weight="bold">R1 4,7 kΩ</text>
+<path d="M700,540 H 1020" fill="none" stroke="#d97706" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="880" cy="540" r="6" fill="#d97706"/>
+<path d="M880,100 V 250" fill="none" stroke="#222" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M880,400 V 540" fill="none" stroke="#d97706" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="855" y="250" width="50" height="150" rx="4" fill="#fff7ed" stroke="#d97706" stroke-width="2"/>
+<line x1="855" y1="325" x2="905" y2="325" stroke="#d97706" stroke-width="2" stroke-dasharray="4 3"/>
+<text x="845" y="300" text-anchor="end" font-size="15" fill="#111" font-weight="bold">R2 = 2 × 4,7 kΩ</text>
+<text x="845" y="320" text-anchor="end" font-size="13" fill="#475569">en série (9,4 kΩ)</text>
+<text x="845" y="342" text-anchor="end" font-size="13" fill="#475569">entre GPIO18 et masse</text>
+<text x="760" y="575" text-anchor="start" font-size="13" fill="#92400e">GPIO18 ≈ 3,3 V crête</text>
+<text x="760" y="592" text-anchor="start" font-size="12" fill="#92400e">(multimètre ≈ 2,8 V)</text>
+<rect x="560" y="640" width="240" height="240" rx="10" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="2"/>
+<text x="680" y="665" text-anchor="middle" font-size="15" fill="#fff" font-weight="bold">Module TTL ↔ RS485</text>
+<rect x="560" y="685" width="44" height="150" rx="4" fill="#0ea5e9" stroke="#075985"/>
+<circle cx="582" cy="700" r="10" fill="#e5e7eb" stroke="#334155"/>
+<text x="612" y="705" text-anchor="start" font-size="15" fill="#fff" font-weight="bold">A+</text>
+<circle cx="582" cy="760" r="10" fill="#e5e7eb" stroke="#334155"/>
+<text x="612" y="765" text-anchor="start" font-size="15" fill="#fff" font-weight="bold">B−</text>
+<circle cx="582" cy="820" r="10" fill="#e5e7eb" stroke="#334155"/>
+<text x="612" y="825" text-anchor="start" font-size="15" fill="#fff" font-weight="bold">⏚</text>
+<rect x="784" y="672" width="16" height="16" fill="#facc15" stroke="#854d0e"/>
+<text x="776" y="685" text-anchor="end" font-size="15" fill="#fff" font-weight="bold">GND</text>
+<rect x="784" y="722" width="16" height="16" fill="#facc15" stroke="#854d0e"/>
+<text x="776" y="735" text-anchor="end" font-size="15" fill="#fff" font-weight="bold">RXD</text>
+<rect x="784" y="772" width="16" height="16" fill="#facc15" stroke="#854d0e"/>
+<text x="776" y="785" text-anchor="end" font-size="15" fill="#fff" font-weight="bold">TXD</text>
+<rect x="784" y="822" width="16" height="16" fill="#facc15" stroke="#854d0e"/>
+<text x="776" y="835" text-anchor="end" font-size="15" fill="#fff" font-weight="bold">VCC</text>
+<text x="680" y="866" text-anchor="middle" font-size="11" fill="#dbeafe">bornier       connecteur 4 broches</text>
+<path d="M470,700 H 572" fill="none" stroke="#16a34a" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M470,760 H 572" fill="none" stroke="#2563eb" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="560" y="902" text-anchor="start" font-size="12" fill="#475569">⏚ : non branché</text>
+<path d="M800,680 H 900 V 608 H 942 A 8 8 0 0 1 958 608 H 1020" fill="none" stroke="#222" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M800,730 H 950 V 574 H 1020" fill="none" stroke="#7c3aed" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M800,780 H 990 V 778 H 1020" fill="none" stroke="#0891b2" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M800,830 H 840 V 950 H 1330 V 812 H 1240" fill="none" stroke="#dc2626" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="830" y="724" text-anchor="start" font-size="12" fill="#7c3aed">RXD → GPIO19</text>
+<text x="830" y="774" text-anchor="start" font-size="12" fill="#0891b2">TXD → GPIO23</text>
+<text x="850" y="824" text-anchor="start" font-size="12" fill="#dc2626">VCC → 3V3</text>
+<text x="810" y="674" text-anchor="start" font-size="12" fill="#222">GND</text>
+<rect x="1000" y="160" width="260" height="690" rx="12" fill="#111827" stroke="#000" stroke-width="2"/>
+<rect x="1100" y="138" width="60" height="34" rx="8" fill="#9ca3af" stroke="#4b5563" stroke-width="2"/>
+<text x="1180" y="128" text-anchor="start" font-size="13" fill="#475569">USB-C</text>
+<rect x="1075" y="610" width="110" height="150" rx="6" fill="#d1d5db"/>
+<text x="1130" y="670" text-anchor="middle" font-size="13" fill="#111">ESP32-</text>
+<text x="1130" y="688" text-anchor="middle" font-size="13" fill="#111" font-weight="bold">WROOM-32U</text>
+<circle cx="1095" cy="745" r="7" fill="#fbbf24" stroke="#92400e"/>
+<text x="1130" y="780" text-anchor="middle" font-size="11" fill="#e5e7eb">antenne (u.FL)</text>
+<circle cx="1020" cy="200" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="205" text-anchor="start" font-size="13" fill="#9ca3af">CLK</text>
+<circle cx="1020" cy="234" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="239" text-anchor="start" font-size="13" fill="#9ca3af">D0</text>
+<circle cx="1020" cy="268" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="273" text-anchor="start" font-size="13" fill="#9ca3af">D1</text>
+<circle cx="1020" cy="302" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="307" text-anchor="start" font-size="13" fill="#9ca3af">15</text>
+<circle cx="1020" cy="336" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="341" text-anchor="start" font-size="13" fill="#9ca3af">2</text>
+<circle cx="1020" cy="370" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="375" text-anchor="start" font-size="13" fill="#9ca3af">0</text>
+<circle cx="1020" cy="404" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="409" text-anchor="start" font-size="13" fill="#9ca3af">4</text>
+<circle cx="1020" cy="438" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="443" text-anchor="start" font-size="13" fill="#9ca3af">16</text>
+<circle cx="1020" cy="472" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="477" text-anchor="start" font-size="13" fill="#9ca3af">17</text>
+<circle cx="1020" cy="506" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="511" text-anchor="start" font-size="13" fill="#9ca3af">5</text>
+<circle cx="1020" cy="540" r="9" fill="#d97706" stroke="#fff" stroke-width="3"/>
+<text x="1036" y="545" text-anchor="start" font-size="13" fill="#fff" font-weight="bold">18</text>
+<circle cx="1020" cy="574" r="9" fill="#7c3aed" stroke="#fff" stroke-width="3"/>
+<text x="1036" y="579" text-anchor="start" font-size="13" fill="#fff" font-weight="bold">19</text>
+<circle cx="1020" cy="608" r="9" fill="#222" stroke="#fff" stroke-width="3"/>
+<text x="1036" y="613" text-anchor="start" font-size="13" fill="#fff" font-weight="bold">GND</text>
+<circle cx="1020" cy="642" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="647" text-anchor="start" font-size="13" fill="#9ca3af">21</text>
+<circle cx="1020" cy="676" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="681" text-anchor="start" font-size="13" fill="#9ca3af">RX</text>
+<circle cx="1020" cy="710" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="715" text-anchor="start" font-size="13" fill="#9ca3af">TX</text>
+<circle cx="1020" cy="744" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="749" text-anchor="start" font-size="13" fill="#9ca3af">22</text>
+<circle cx="1020" cy="778" r="9" fill="#0891b2" stroke="#fff" stroke-width="3"/>
+<text x="1036" y="783" text-anchor="start" font-size="13" fill="#fff" font-weight="bold">23</text>
+<circle cx="1020" cy="812" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1036" y="817" text-anchor="start" font-size="13" fill="#9ca3af">GND</text>
+<circle cx="1240" cy="200" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="205" text-anchor="end" font-size="13" fill="#9ca3af">5V</text>
+<circle cx="1240" cy="234" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="239" text-anchor="end" font-size="13" fill="#9ca3af">CMD</text>
+<circle cx="1240" cy="268" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="273" text-anchor="end" font-size="13" fill="#9ca3af">D3</text>
+<circle cx="1240" cy="302" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="307" text-anchor="end" font-size="13" fill="#9ca3af">D2</text>
+<circle cx="1240" cy="336" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="341" text-anchor="end" font-size="13" fill="#9ca3af">13</text>
+<circle cx="1240" cy="370" r="9" fill="#222" stroke="#fff" stroke-width="3"/>
+<text x="1224" y="375" text-anchor="end" font-size="13" fill="#fff" font-weight="bold">GND</text>
+<circle cx="1240" cy="404" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="409" text-anchor="end" font-size="13" fill="#9ca3af">12</text>
+<circle cx="1240" cy="438" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="443" text-anchor="end" font-size="13" fill="#9ca3af">14</text>
+<circle cx="1240" cy="472" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="477" text-anchor="end" font-size="13" fill="#9ca3af">27</text>
+<circle cx="1240" cy="506" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="511" text-anchor="end" font-size="13" fill="#9ca3af">26</text>
+<circle cx="1240" cy="540" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="545" text-anchor="end" font-size="13" fill="#9ca3af">25</text>
+<circle cx="1240" cy="574" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="579" text-anchor="end" font-size="13" fill="#9ca3af">33</text>
+<circle cx="1240" cy="608" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="613" text-anchor="end" font-size="13" fill="#9ca3af">32</text>
+<circle cx="1240" cy="642" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="647" text-anchor="end" font-size="13" fill="#9ca3af">35</text>
+<circle cx="1240" cy="676" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="681" text-anchor="end" font-size="13" fill="#9ca3af">34</text>
+<circle cx="1240" cy="710" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="715" text-anchor="end" font-size="13" fill="#9ca3af">VN</text>
+<circle cx="1240" cy="744" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="749" text-anchor="end" font-size="13" fill="#9ca3af">VP</text>
+<circle cx="1240" cy="778" r="9" fill="#d1d5db" stroke="#fff" stroke-width="1"/>
+<text x="1224" y="783" text-anchor="end" font-size="13" fill="#9ca3af">EN</text>
+<circle cx="1240" cy="812" r="9" fill="#dc2626" stroke="#fff" stroke-width="3"/>
+<text x="1224" y="817" text-anchor="end" font-size="13" fill="#fff" font-weight="bold">3V3</text>
+<text x="1068" y="681" text-anchor="start" font-size="13" fill="#f87171" font-weight="bold">✗</text>
+<text x="1068" y="715" text-anchor="start" font-size="13" fill="#f87171" font-weight="bold">✗</text>
+<text x="1130" y="885" text-anchor="middle" font-size="13" fill="#475569">ESP32 DevKitC V4 – vue de dessus, USB en haut</text>
+<rect x="20" y="1160" width="1360" height="262" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+<text x="40" y="1188" text-anchor="start" font-size="17" fill="#111" font-weight="bold">À retenir (montage final, sans prise de courant)</text>
+<text x="40" y="1217" text-anchor="start" font-size="14" fill="#111">• Repérez chaque fil par continuité avec les numéros gravés sur la prise : les couleurs du câble ne veulent rien dire.</text>
+<text x="40" y="1244" text-anchor="start" font-size="14" fill="#111">• Broches RX et TX de la carte (marquées ✗) : ce sont celles de l'USB, ne pas les utiliser. Le module va sur GPIO19 et GPIO23.</text>
+<text x="40" y="1271" text-anchor="start" font-size="14" fill="#111">• VCC du module sur 3V3 (pas 5V) : ses sorties restent ainsi à 3,3 V, sans danger pour l'ESP32.</text>
+<text x="40" y="1298" text-anchor="start" font-size="14" fill="#111">• Toutes les masses sont communes : circuit 1 du spa, GND de l'ESP32, GND du module, bas de R2. Borne ⏚ du module : laissée libre.</text>
+<text x="40" y="1325" text-anchor="start" font-size="14" fill="#111">• Le 9 V (circuit 6) passe TOUJOURS par l'abaisseur : jamais directement sur l'ESP32. Circuits 7 et 8 isolés.</text>
+<text x="40" y="1352" text-anchor="start" font-size="14" fill="#111">• Jamais d'ordinateur ou de chargeur sur l'USB-C pendant que l'abaisseur est branché : 1re installation par USB au bureau, ensuite mises à jour par Wi-Fi.</text>
+<text x="40" y="1379" text-anchor="start" font-size="14" fill="#111">• Visser l'antenne externe sur la prise u.FL du WROOM-32U avant la mise sous tension.</text>
+<text x="40" y="1406" text-anchor="start" font-size="14" fill="#111">• Aucune trame reçue alors que la sélection est détectée : inverser A+ et B− (sans risque).</text>
+</svg>

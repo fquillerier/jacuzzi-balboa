@@ -145,7 +145,25 @@ Branchement : circuit **6** du spa → entrée **+** du module, circuit **1** (o
 
 - **À éviter :** les modules annoncés « 9 V–24 V → 5 V ». Avec 9 V mesurés sur le circuit 6, ils sont à la limite et risquent de ne pas donner 5 V stables.
 - **Ne jamais brancher le chargeur USB et le module en même temps.**
-- Le circuit 6 a un **courant limité**. L'ESP32 tire environ 100 à 150 mA côté 9 V lors des pointes Wi-Fi, ce que le projet netmindz utilise sans problème. Si le module redémarre tout seul, revenir à la solution 1.
+- Le circuit 6 a un **courant limité**, dont la valeur n'est pas documentée par Balboa. Estimation côté 9 V, avec un abaisseur à 85 % de rendement : environ **60 à 80 mA en moyenne**, et des pointes brèves vers **200 mA** quand le Wi-Fi émet. Le projet netmindz alimente ainsi son module sans problème signalé. Si le module ou le clavier redémarre tout seul, revenir à la solution 1 (ou à une batterie USB).
+
+#### Montage final alimenté par le spa (sans prise de courant à proximité)
+
+![Montage final alimenté par le spa](docs/cablage-spa.png)
+
+Mise en service, dans cet ordre :
+
+1. **Au bureau, sur l'ordinateur :** première installation du firmware par USB (installation complète), puis réglage du Wi-Fi de la maison. Débrancher l'USB.
+2. **Contrôler l'abaisseur seul**, avant de le relier au spa : alimenter son entrée avec une pile 9 V (ou toute source de 9 à 12 V) et mesurer **5,0 à 5,2 V** sur sa sortie USB (fils extrêmes d'un câble USB coupé, ou testeur USB). Vérifier la polarité IN+ / IN−.
+3. **Premier essai au spa sans charger le circuit 6** (conseillé) : alimenter l'ESP32 avec une **batterie USB** et brancher seulement les circuits 1 à 4. Vérifier que la page indique « signal de sélection détecté » et que les trames arrivent. Ainsi, un éventuel problème de bus ne se confond pas avec un problème d'alimentation.
+4. **Spa coupé au disjoncteur**, brancher l'abaisseur : circuit **6** → IN+, circuit **5** → IN−, sortie USB → USB-C de l'ESP32. Plus aucune batterie ni ordinateur sur l'USB-C.
+5. **Remise sous tension** et contrôles :
+   - le clavier ML700 fonctionne normalement (affichage, rétroéclairage, touches) ;
+   - au multimètre, le circuit 6 reste vers **9 V** (au moins 8,5 V) avec l'ESP32 en marche ;
+   - la page répond, et au bout de 24 h le compteur de **démarrages** (Réglages → informations) n'a pas augmenté.
+6. **Si le clavier clignote, se réinitialise, ou si le module redémarre en boucle :** couper le spa, débrancher l'abaisseur et revenir à une alimentation séparée.
+
+Les **mises à jour** se font ensuite par Wi-Fi ; il n'est plus nécessaire de rebrancher un ordinateur.
 
 ## Quand tout est reçu : déroulé du montage
 
