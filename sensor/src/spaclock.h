@@ -85,7 +85,7 @@ bool ckMenuOpen() {
 }
 
 bool ckIdle() {
-  return panelDetected && !otaTask && sendBuffer.isEmpty() && faMenu == "00" && ckStatusDisp() && millis() - faAt < 2000;
+  return panelDetected && !otaTask && !seqProc && sendBuffer.isEmpty() && faMenu == "00" && ckStatusDisp() && millis() - faAt < 2000;
 }
 
 void clockSave() {

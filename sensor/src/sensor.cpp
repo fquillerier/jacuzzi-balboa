@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.9.0"
+#define FW_VERSION "1.9.1"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -214,6 +214,7 @@ int spaMin = -1;
 unsigned long faAt = 0;               // millis() of the last FA frame
 uint32_t cmdAckCount = 0;             // commands acknowledged by the controller since boot
 bool kbProc = false;                  // a key sequence (clock setting, filter read-out) is running
+bool seqProc = false;                 // a mode + set-point sequence is running (veille.h)
 
 bool setTargetTemperature(float temperatureFloat);
 void setModeIdx(int m);
@@ -231,6 +232,7 @@ void attachPanelInterrupt();
 #include "ota_online.h"
 #include "spy.h"
 #include "keys.h"
+#include "veille.h"
 #include "modesched.h"
 #include "spaclock.h"
 
@@ -641,6 +643,7 @@ void setup() {
     keysLoad();   // button codes changed from the page
     schedLoad();  // heating mode schedule
     clockLoad();  // spa clock setting
+    veilleLoad(); // set-point rule for the sleep mode
     logAdd('S', "Démarrage n°" + String(bootCount) + ", cause : " + bootReason + ", firmware " FW_VERSION);
     prefs.getString("mqttHost", "").toCharArray(mqttHost, sizeof(mqttHost));
     prefs.getString("mqttPort", "1883").toCharArray(mqttPort, sizeof(mqttPort));
@@ -771,6 +774,8 @@ void setup() {
     webserver.on("/api/clock", HTTP_POST, handleApiClockPost);
     webserver.on("/api/clock/sync", HTTP_POST, handleApiClockSync);
     webserver.on("/api/clock/fread", HTTP_POST, handleApiFilterRead);
+    webserver.on("/api/veille", HTTP_GET, handleApiVeilleGet);
+    webserver.on("/api/veille", HTTP_POST, handleApiVeillePost);
     webserver.on("/manifest.webmanifest", handleManifest);
     webserver.on("/icon-180.png", handleIcon180);
     webserver.on("/icon-192.png", handleIcon192);
@@ -1010,6 +1015,7 @@ void loop() {
     historyTick();
     schedTick();
     clockTick();
+    veilleTick();
     watchdogTick();
     logTick();
 

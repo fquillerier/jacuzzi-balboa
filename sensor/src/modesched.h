@@ -198,7 +198,7 @@ void schedTick() {
     if (changed) schedSave();
   }
   if (schedPending >= 0) {
-    String r = requestMode(schedPending, "Programmation");
+    String r = requestModeV(schedPending, "Programmation");
     if (r == "ok" || r == "no change") {
       schedPending = -1;
     } else if (millis() - schedPendingSince > SCHED_RETRY_MS) {

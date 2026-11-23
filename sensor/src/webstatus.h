@@ -101,7 +101,7 @@ void handleApiStatus() {
 // Each action is one simulated button press on the topside panel.
 void handleApiCmd() {
   String a = webserver.arg("a");
-  if (kbProc) {   // the module is walking through the panel menus (clock setting, filter read-out)
+  if (kbProc || seqProc) {   // a key sequence is running (clock setting, filter read-out, sleep set-point)
     sendApiResult(false, "busy");
     return;
   }
@@ -150,7 +150,7 @@ void handleApiCmd() {
 
 // /api/target?t=37.5   (0.5 degree steps, 26-40 C)
 void handleApiTarget() {
-  if (kbProc) {   // the module is walking through the panel menus (clock setting, filter read-out)
+  if (kbProc || seqProc) {   // a key sequence is running (clock setting, filter read-out, sleep set-point)
     sendApiResult(false, "busy");
     return;
   }
@@ -176,6 +176,8 @@ void handleApiTarget() {
   }
 }
 
+String requestModeV(int m, const char* who);  // veille.h: same, plus the sleep set-point rule
+
 // Switch the heating mode by simulating Mode → Cool × n → Mode.
 // Returns "ok", "no change" or why it could not be done (used by the page and the scheduler).
 String requestMode(int m, const char* who) {
@@ -200,7 +202,7 @@ void handleApiMode() {
     return;
   }
   int m = webserver.arg("m").toInt();
-  String r = requestMode(m, "Page");
+  String r = requestModeV(m, "Page");
   if (r == "ok") {
     sendApiResult(true, "mode " + String(m));
   } else if (r == "no change") {
@@ -270,7 +272,7 @@ void handleApiSendHex() {
     sendApiResult(false, "bad code");
     return;
   }
-  if (kbProc) {   // the module is walking through the panel menus (clock setting, filter read-out)
+  if (kbProc || seqProc) {   // a key sequence is running (clock setting, filter read-out, sleep set-point)
     sendApiResult(false, "busy");
     return;
   }

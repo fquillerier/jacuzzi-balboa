@@ -241,6 +241,16 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
       <p class="small">Cette programmation est celle du <b>module</b> : il suit l'heure exacte d'Internet (changements d'heure été/hiver compris) et envoie les ordres au spa le moment venu.</p>
     </section>
     <section class="card">
+      <div class="label">Veille hors-gel</div>
+      <div class="frow"><input type="checkbox" id="vOn"><label for="vOn" style="font-size:15px">En veille, abaisser la consigne</label></div>
+      <div class="frow"><label for="vSt" style="flex:1">Consigne en veille</label><input type="number" id="vSt" min="26" max="40" step="0.5" style="width:90px"> °C</div>
+      <div class="frow"><label for="vWt" style="flex:1">Consigne au retour de veille</label><input type="number" id="vWt" min="26" max="40" step="0.5" style="width:90px"> °C</div>
+      <div class="frow"><input type="checkbox" id="vFol"><label for="vFol" style="font-size:15px">Appliquer aussi quand le mode est changé au clavier du spa</label></div>
+      <div class="small" id="vHint"></div>
+      <button class="btn primary" id="vSave">Enregistrer</button>
+      <div class="small" id="vLast" style="margin-top:8px"></div>
+    </section>
+    <section class="card">
       <div class="label">Horloge du spa</div>
       <div class="small" id="ckInfo"></div>
       <div class="frow"><input type="checkbox" id="ckAuto"><label for="ckAuto" style="font-size:15px">Mise à l'heure automatique du spa</label></div>
@@ -466,7 +476,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
   $('minus').onclick=function(){ step(-0.5); };
   ['jet1','jet2','jet3','aux','light'].forEach(function(k){ $(k).onclick=function(){ cmd(k, featName(k)); }; });
   var mb=$('modes').querySelectorAll('button');
-  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ toast(r.ok?('Mode : '+MODE_NAMES[m]):r.msg==='mode unknown'?'Mode actuel encore inconnu, réessayez dans quelques secondes':(r.msg==='nopanel'?'Signal de sélection non détecté, commandes désactivées':r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'Impossible de changer de mode')); }); }; }
+  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ if(r.ok && VE && VE.on && r.msg!=='no change' && (+m===2 || parseInt(S.mode,10)===2)){ setTimeout(loadVeille,500); } toast(r.ok?('Mode : '+MODE_NAMES[m]+((VE&&VE.on&&+m===2)?' (consigne '+VE.st+' °C d\'abord)':(VE&&VE.on&&parseInt(S.mode,10)===2?' (puis consigne '+VE.wt+' °C)':''))):r.msg==='mode unknown'?'Mode actuel encore inconnu, réessayez dans quelques secondes':(r.msg==='nopanel'?'Signal de sélection non détecté, commandes désactivées':r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'Impossible de changer de mode')); }); }; }
   $('otaLink').href='http://'+location.hostname+':8080/update';
   $('wifiReset').onclick=function(){
     if(!confirm('Effacer le réseau Wi-Fi enregistré ? Le module redémarre en mode configuration.')) return;
@@ -793,7 +803,34 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
     var q='en='+(SC.en?1:0)+'&w='+SC.w.map(function(w){ return w.join('-'); }).join(',')+'&o='+SC.o.map(function(o){ return o.join('-'); }).join(',');
     post('/api/sched?'+q).then(function(r){ toast(r.ok?'Programmation enregistrée':'Programmation refusée'); loadSched(); });
   };
-  $('schedBox').addEventListener('toggle',function(){ if($('schedBox').open){ loadSched(); loadClock(); } });
+  $('schedBox').addEventListener('toggle',function(){ if($('schedBox').open){ loadSched(); loadClock(); loadVeille(); } });
+
+  // ---- sleep set-point rule ("veille hors-gel") ----
+  var VE=null;
+  function veHint(){
+    var st=parseFloat($('vSt').value)||26, wt=parseFloat($('vWt').value)||34;
+    $('vHint').textContent=$('vOn').checked
+      ? 'Passage en Veille : consigne '+st.toFixed(1)+' °C, puis mode Veille. Le spa ne chauffe alors que pendant la filtration, jusqu\'à la consigne − 11 °C, soit environ '+(st-11).toFixed(0)+' °C. Sortie de veille : mode choisi, puis consigne '+wt.toFixed(1)+' °C (mise à jour avec la consigne en cours à chaque passage en veille). La protection antigel du spa reste active.'
+      : 'Désactivé : le mode Veille garde la consigne actuelle (le spa maintient alors la consigne − 11 °C).';
+  }
+  function loadVeille(){
+    api('/api/veille').then(function(r){
+      if(!r || r.on===undefined) return;
+      VE=r;
+      if(!$('vSt').matches(':focus')){ $('vOn').checked=!!r.on; $('vSt').value=r.st; $('vWt').value=r.wt; $('vFol').checked=!!r.follow; }
+      veHint();
+      var l=r.job?'Séquence en cours…':(r.last?((r.lastOk?'✓ ':'⚠ ')+(r.lastAt?fmtWhen(r.lastAt)+' : ':'')+r.last):'');
+      $('vLast').textContent=l; $('vLast').style.color=(!r.job&&r.last&&!r.lastOk)?'var(--warm)':'';
+      if(r.job) setTimeout(loadVeille,2000);
+    });
+  }
+  ['vOn','vSt','vWt'].forEach(function(id){ $(id).addEventListener('input',veHint); });
+  $('vSave').onclick=function(){
+    var st=parseFloat($('vSt').value), wt=parseFloat($('vWt').value);
+    if(!(st>=26&&st<=40&&wt>=26&&wt<=40)){ toast('Consignes entre 26 et 40 °C'); return; }
+    post('/api/veille?on='+($('vOn').checked?1:0)+'&st='+st+'&wt='+wt+'&follow='+($('vFol').checked?1:0)).then(function(r){ toast(r.ok?'Veille hors-gel enregistrée':'Valeurs refusées'); loadVeille(); });
+  };
+  loadVeille();
 
   // ---- spa clock and filter cycle read-out ----
   var CK={job:'', timer:null};
