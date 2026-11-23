@@ -47,9 +47,9 @@ Sur la carte, la prise est verticale, avec **l'ergot à gauche**. Un **petit tri
 
 | Broche (position sur la photo) | Rôle | Relié à | Mesuré (spa sous tension) |
 |---|---|---|---|
-| **1** (bas, droite) | RS485 B | module RS485 **B** | à mesurer (≈ 2–3 V attendus) |
-| **3** (3ᵉ rang, droite) | RS485 A | module RS485 **A** | à mesurer (≈ 2–3 V attendus) |
-| **5** (2ᵉ rang, droite) | sélection clavier (signal 5 V) | **GPIO18 par le pont diviseur** | ≈ 5 V ✅ |
+| **1** (bas, droite) | RS485 B | module RS485 **B** | 0,8 V ✅ |
+| **3** (3ᵉ rang, droite) | RS485 A | module RS485 **A** | 4,16 V ✅ (A > B : bus au repos, polarité confirmée) |
+| **5** (2ᵉ rang, droite) | sélection clavier (signal 5 V) | **GPIO18 par le pont diviseur** | 4,16 V ✅ (moyenne d'un signal 5 V) |
 | **6** (2ᵉ rang, gauche) | ≈ 9 V | rien pour le test (plus tard : abaisseur 5 V) | 9 V ✅ |
 | **7** (haut, droite) | masse | GND commun | 0 V ✅ |
 | **8** (haut, gauche) | masse | (inutile si la 7 est branchée) | 0 V ✅ |
