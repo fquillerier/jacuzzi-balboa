@@ -70,6 +70,8 @@ Les documentations du projet d'origine utilisent leur propre numérotation (« b
 | Rôle | masse | sélection | A | B | masse | 9 V | — | — |
 
 Dans le code, `PIN_5_PIN_DEF` (GPIO18) désigne ce signal de sélection : c'est le **circuit Molex 2**.
+
+Le fil de discussion à l'origine du projet ([ccutrer/balboa_worldwide_app #14](https://github.com/ccutrer/balboa_worldwide_app/issues/14), GL2000 + ML400 sur J70) utilise aussi cette ancienne numérotation : « 6 = alimentation 9-10 V » et « 7 et 8 = masse » y correspondent à nos circuits **6**, puis **1 et 5**. Les hypothèses de ce fil antérieures au décodage (protocole non RS485, trames de 64/71 octets) sont dépassées.
 </details>
 
 ### Schéma complet
@@ -129,6 +131,7 @@ Branchement : circuit **6** du spa → entrée **+** du module, circuit **1** (o
 ## Quand tout est reçu : déroulé du montage
 
 1. **Préparer le câble Micro-Fit :** repérer le « 1 » gravé sur la prise, puis au multimètre (continuité) le fil des circuits **1, 2, 3 et 4** (et 6 si alimentation par le spa). Les couleurs des fils ne veulent rien dire. Isoler les fils inutilisés (5, 7, 8, et 6 pour le test).
+   - *Contrôle conseillé, spa coupé :* au multimètre en continuité, **les circuits 1 et 5 de J70 doivent être reliés** (ce sont les deux masses), et le circuit 6 ne doit être relié à aucun des deux. Notez aussi si 7 et 8 sont reliés à la masse (sans importance pour le montage). Ce contrôle confirme le repérage avant tout branchement.
 2. **Souder le pont diviseur** (R1 = 4,7 kΩ, R2 = 2 × 4,7 kΩ en série) et vérifier les valeurs au multimètre.
 3. **Câbler** l'ESP32 et le module RS485 selon le schéma, avec une masse commune.
 4. **Installer le firmware** sur l'ESP32 depuis l'ordinateur (voir plus bas), **avant** de le brancher au spa.
@@ -179,6 +182,29 @@ Si le réseau enregistré est indisponible au démarrage, le point d'accès Jacu
 - **Pompes, blower, éclairage :** chaque appui équivaut à la touche correspondante du clavier.
 - **Mode :** Standard / Économie / Veille. Pour un spa peu utilisé : laissez-le en Économie et passez en Standard la veille du bain.
 - **Réglages et informations** (en bas de page) : personnalisation, version du firmware, mise à jour, changement de réseau Wi-Fi.
+
+## Aperçu de la page web
+
+Captures de la page **http://jacuzzi.local** sur un téléphone, **avec des données simulées** (températures, trames et journal sont des exemples, pas des relevés de votre spa).
+
+<table>
+<tr>
+<td width="50%" valign="top"><b>Accueil</b> : température, consigne, pompes, blower, éclairage, mode et prochain changement programmé.<br><img src="docs/ecrans/1-accueil.png" width="300" alt="Page d'accueil"></td>
+<td width="50%" valign="top"><b>Mode et historique 24 h</b> : les zones colorées indiquent la chauffe en marche.<br><img src="docs/ecrans/2-mode-historique.png" width="300" alt="Mode de chauffe et historique"></td>
+</tr>
+<tr>
+<td valign="top"><b>Programmation</b> : changements de mode chaque semaine ou à une date précise ; affiche l'écart entre l'heure du module et celle du spa.<br><img src="docs/ecrans/4-programmation.png" width="300" alt="Programmation"></td>
+<td valign="top"><b>Réglages – personnalisation</b> : nom du spa, ville pour la météo, fonctions affichées et leur nom (la pompe 3 n'apparaît sur l'accueil qu'une fois son code saisi).<br><img src="docs/ecrans/3-reglages-1.png" width="300" alt="Réglages, personnalisation"></td>
+</tr>
+<tr>
+<td valign="top"><b>Réglages – codes des touches</b> : un code par touche du clavier, modifiable et testable ; « Jets 3 » est vide tant que le code n'a pas été capturé.<br><img src="docs/ecrans/3-reglages-2.png" width="300" alt="Codes des touches"></td>
+<td valign="top"><b>Réglages – informations et mise à jour</b> : version, temps de fonctionnement, mise à jour par Wi-Fi, redémarrage, changement de réseau.<br><img src="docs/ecrans/3-reglages-3.png" width="300" alt="Informations et mise à jour"></td>
+</tr>
+<tr>
+<td valign="top"><b>Journal (dépannage)</b> : capture des touches du clavier du spa (lettre « P »), notes, export.<br><img src="docs/ecrans/5-journal.png" width="300" alt="Journal"></td>
+<td valign="top"><b>Espion du bus, mode Simple</b> : seules les trames qui changent sont gardées, les octets modifiés sont surlignés (N = notre tour sur J70, A = autre port).<br><img src="docs/ecrans/6-espion.png" width="300" alt="Espion du bus"></td>
+</tr>
+</table>
 
 ## Vérifier les codes de votre clavier (premier test)
 
