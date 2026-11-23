@@ -142,6 +142,7 @@ Branchement : circuit **6** du spa → entrée **+** du module, circuit **1** (o
    - Aucune donnée : **inverser les fils A et B**.
    - « Signal de sélection non détecté » : vérifier le fil du circuit 2 et le pont diviseur.
 9. **Capturer les touches** du ML700 (voir ci-dessous), puis tester un changement de mode Économie → Standard depuis la page.
+   - Puis **Programmation → « Mettre le spa à l'heure maintenant »** (cela active la mise à l'heure automatique), et **« Relever les cycles de filtration »** : exporter le journal pour la suite.
 10. Installation définitive dans le boîtier IP65, câble passé par un presse-étoupe.
 
 ⚠️ **Coupez l'alimentation du spa au tableau avant tout branchement ou débranchement.** Les mesures sous tension se font uniquement dans la zone des connecteurs basse tension, à droite de la carte, loin des borniers et des relais.
@@ -193,7 +194,7 @@ Captures de la page **http://jacuzzi.local** sur un téléphone, **avec des donn
 <td width="50%" valign="top"><b>Mode et historique 24 h</b> : les zones colorées indiquent la chauffe en marche.<br><img src="docs/ecrans/2-mode-historique.png" width="300" alt="Mode de chauffe et historique"></td>
 </tr>
 <tr>
-<td valign="top"><b>Programmation</b> : changements de mode chaque semaine ou à une date précise ; affiche l'écart entre l'heure du module et celle du spa.<br><img src="docs/ecrans/4-programmation.png" width="300" alt="Programmation"></td>
+<td valign="top"><b>Programmation</b> : changements de mode chaque semaine ou à une date précise (horloge du spa et filtration : voir « Programmation des modes de chauffe »).<br><img src="docs/ecrans/4-programmation.png" width="300" alt="Programmation"></td>
 <td valign="top"><b>Réglages – personnalisation</b> : nom du spa, ville pour la météo, fonctions affichées et leur nom (la pompe 3 n'apparaît sur l'accueil qu'une fois son code saisi).<br><img src="docs/ecrans/3-reglages-1.png" width="300" alt="Réglages, personnalisation"></td>
 </tr>
 <tr>
@@ -223,8 +224,26 @@ Section **Programmation** de la page. Le module change le mode (Standard / Écon
 - Le **prochain changement** s'affiche sous le mode de chauffe, sur la page d'accueil.
 - Le module prend l'heure sur Internet (heure de France, passage été/hiver automatique). Sans Internet, il attend que l'heure soit connue (elle est aussi donnée par le téléphone à l'ouverture de la page).
 - Si le changement est impossible sur le moment (mode inconnu, commandes en cours), le module réessaie pendant 15 minutes.
-- La section affiche aussi l'**heure du spa** et l'écart avec l'heure réelle.
-- **Pas encore possible :** régler l'heure du spa et les **cycles de filtration** depuis la page. Il faut d'abord relever avec l'espion la navigation dans les menus du ML700 (touches Time et Mode/Prog).
+- Cette programmation est celle du **module** : c'est lui qui suit l'heure exacte et envoie les ordres au spa.
+
+### Horloge du spa (mise à l'heure automatique)
+
+Le spa a sa propre horloge, qui commande ses **cycles de filtration**. Le module la tient à l'heure exacte d'Internet, **changements d'heure été/hiver compris** :
+
+- Bouton **« Mettre le spa à l'heure maintenant »** : le module rejoue la séquence du manuel ML700 (réf. 40520-99, p. 2) : *Time → Mode/Prog → Warm/Cool (heures) → Mode/Prog → Warm/Cool (minutes) → Time*. Il vise l'heure qu'il sera à la fin de la séquence, puis vérifie l'heure du spa ; en cas d'écart, il refait un essai.
+- **Mise à l'heure automatique** (case cochée par défaut) : dès que l'horloge du spa s'écarte de **2 min ou plus**, par exemple à 3 h du matin le dernier dimanche d'octobre, le module la corrige. Au maximum 3 essais par jour, pause de 2 h après un échec, jamais pendant que la pompe 2, la pompe 1 en vitesse 2 ou l'éclairage sont en marche.
+- Le réglage automatique ne démarre **qu'après une première mise à l'heure réussie avec le bouton** : c'est la preuve que les codes des touches Time, Mode, Warm et Cool sont bons sur votre spa.
+- **Sécurités** : chaque touche attend l'accusé de réception du spa. Avant chaque Warm/Cool, le module vérifie que l'écran n'affiche pas une température (sinon l'appui changerait la consigne) et que le menu des modes n'est pas ouvert (Cool changerait le mode). Sinon il s'arrête sans rien appuyer de plus ; le menu se referme seul. Pendant la séquence (une dizaine de secondes), les autres commandes sont refusées (« réessayez »).
+- Le journal garde le détail (codes de menu et affichage à chaque étape).
+
+<img src="docs/ecrans/7-horloge.png" width="300" alt="Horloge du spa">
+
+### Cycles de filtration
+
+Les cycles sont exécutés **par le spa**, selon son horloge (2 cycles par jour : F1 et F2, début et fin, par pas de 5 min ; souvent 8:00–10:00 et 20:00–22:00 par défaut).
+
+- **Aujourd'hui :** bouton **« Relever les cycles de filtration »**. Le module parcourt les réglages (*Time*, puis *Mode/Prog* répété) **sans rien modifier** et note pour chaque étape le code de menu et l'affichage du spa. Le résultat s'affiche sous le bouton et dans le journal.
+- **Prochaine étape :** le réglage des cycles depuis la page. Le manuel décrit la séquence, mais pas ce que l'écran affiche dans ces menus ni le nombre exact d'appuis entre « fin F1 » et « début F2 ». Pour ne rien modifier à l'aveugle, ce réglage sera activé après **un relevé fait sur votre spa** (exporter le journal et me l'envoyer).
 
 ## Codes des touches et pompe 3
 

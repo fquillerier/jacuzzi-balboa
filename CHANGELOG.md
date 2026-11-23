@@ -2,6 +2,11 @@
 
 Chaque section s'affiche comme note lors de la mise à jour en ligne (Réglages et informations → Rechercher une mise à jour).
 
+## 1.9.0
+- Horloge du spa : mise à l'heure depuis la page (touches Time, Mode/Prog, Warm, Cool, avec vérification à chaque appui) et mise à l'heure automatique quand l'écart atteint 2 min, changements d'heure été/hiver compris. L'automatique démarre après une première mise à l'heure réussie.
+- Relevé des cycles de filtration (lecture seule, Time puis Mode/Prog) : affichage et code de menu notés à chaque étape, pour préparer leur réglage depuis la page.
+- Correction : l'accusé de réception des touches est lu dans toutes les trames d'état, y compris quand l'écran n'affiche pas une température (menus heure et filtration). Avant, ces appuis étaient considérés comme perdus.
+
 ## 1.8.2
 - Numérotation officielle Molex dans la documentation (circuit 1 = triangle imprimé sur la carte) ; les messages parlent du « signal de sélection (circuit 2) » au lieu de la « broche 5 » du projet d'origine.
 
