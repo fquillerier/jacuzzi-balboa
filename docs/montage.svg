@@ -15,7 +15,8 @@
     <circle cx="80" cy="340" r="18" fill="#9ca3af"/><text x="80" y="345">2</text>
     <circle cx="150" cy="340" r="18" fill="#2563eb"/><text x="150" y="345">1</text>
   </g>
-  <text x="145" y="400" text-anchor="middle" font-size="13" fill="#475569">ergot à gauche · ▲ broche 1</text>
+  <text x="52" y="392" font-size="13" fill="#475569">ergot à gauche</text>
+  <text x="52" y="409" font-size="13" fill="#475569">1 en bas à droite</text>
 
   <!-- RS485 module -->
   <rect x="430" y="90" width="210" height="190" rx="10" fill="#eef2ff" stroke="#3730a3" stroke-width="2"/>
@@ -50,14 +51,14 @@
   <!-- divider -->
   <path d="M168 200 H260 V470 H400" fill="none" stroke="#d97706" stroke-width="4"/>
   <rect x="400" y="455" width="110" height="30" rx="4" fill="#fff7ed" stroke="#d97706" stroke-width="2"/>
-  <text x="455" y="476" text-anchor="middle" font-weight="bold" fill="#111">R1 10 kΩ</text>
+  <text x="455" y="476" text-anchor="middle" font-weight="bold" fill="#111">R1 4,7 kΩ</text>
   <path d="M510 470 H700" stroke="#d97706" stroke-width="4"/>
   <circle cx="700" cy="470" r="6" fill="#d97706"/>
   
   <text x="705" y="455" font-size="12" fill="#475569">≈ 3,3 V</text>
   <path d="M700 470 V510" stroke="#d97706" stroke-width="4"/>
-  <rect x="645" y="510" width="110" height="30" rx="4" fill="#fff7ed" stroke="#d97706" stroke-width="2"/>
-  <text x="700" y="531" text-anchor="middle" font-weight="bold" fill="#111">R2 20 kΩ</text>
+  <rect x="625" y="510" width="150" height="30" rx="4" fill="#fff7ed" stroke="#d97706" stroke-width="2"/>
+  <text x="700" y="531" text-anchor="middle" font-weight="bold" fill="#111">R2 2 × 4,7 kΩ</text>
   <path d="M700 540 V590" stroke="#222" stroke-width="3"/>
 
   <!-- ground bus -->

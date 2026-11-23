@@ -30,7 +30,7 @@ Changements par rapport à l'original :
 | ESP32 DevKit (ESP-WROOM-32), USB-C | 30 ou 38 broches, les deux conviennent |
 | Module TTL–RS485 à contrôle **automatique** de direction | broches TXD, RXD, VCC, GND, **sans** RE/DE |
 | Câble Molex **Micro-Fit 3.0**, 8 broches (prise 43025-0800), fils nus | pas de 3 mm, vérifié sur la prise du ML700 |
-| 2 résistances : **10 kΩ** et **20 kΩ** (ou 3 × 10 kΩ) | pont diviseur de la broche 5 |
+| **3 résistances de 4,7 kΩ** (ou tout couple de rapport 1:2 entre 1 et 47 kΩ) | pont diviseur de la broche 5 |
 | Chargeur USB 5 V + câble USB-C | alimentation pour le test |
 | Câbles Dupont, gaine thermorétractable, boîtier IP65, presse-étoupe PG7 | montage final |
 | *Facultatif :* abaisseur 5 V à sortie USB, entrée dès 6 V | pour alimenter l'ESP32 par le spa (broche 6), voir « Alimentation » |
@@ -41,7 +41,9 @@ Les ports clavier « MAIN PANELS » sont **J70 à J73**. Sur ce spa, le clavier 
 
 ### Repérage des broches de J70
 
-Sur la carte, la prise est verticale, avec **l'ergot à gauche**. Un **petit triangle** imprimé sous la prise, côté droit, repère la **broche 1**. C'est l'inverse de la photo du projet d'origine, où la prise est tournée d'un demi-tour.
+Sur la carte, la prise est verticale, avec **l'ergot à gauche** : **masses (7, 8) en haut, broche 1 en bas à droite**. C'est l'inverse de la photo du projet d'origine, où la prise est tournée d'un demi-tour.
+
+**Attention :** le petit triangle imprimé à côté de la prise (en haut à droite) suit la numérotation du fabricant, **pas celle du projet**. Ne pas s'y fier : le plan ci-dessous est validé par les mesures de tension.
 
 ![Brochage de J70 sur la carte GL8000](docs/brochage-J70.jpg)
 
@@ -68,17 +70,23 @@ Sur la carte, la prise est verticale, avec **l'ergot à gauche**. Un **petit tri
 
 ### Pont diviseur de la broche 5 (obligatoire)
 
-La broche 5 est un signal en **5 V** (mesuré : ≈ 5 V). L'ESP32 accepte **3,6 V au maximum** sur ses entrées. Le projet d'origine la relie directement au GPIO18 ; ici, on protège l'ESP32 :
+La broche 5 est un signal en **5 V** (mesuré : 4,16 V en moyenne). L'ESP32 accepte **3,6 V au maximum** sur ses entrées. Le projet d'origine la relie directement au GPIO18 ; ici, on protège l'ESP32 avec **3 résistances de 4,7 kΩ** :
 
 ```
-Broche 5 du spa ──[ R1 10 kΩ ]──┬── GPIO18 (ESP32)
-                                │
-                           [ R2 20 kΩ ]   (ou 2 × 10 kΩ en série)
-                                │
-Broche 7 (masse) ───────────────┴── GND (ESP32)
+Broche 5 du spa ──[ R1 4,7 kΩ ]──┬── GPIO18 (ESP32)
+                                 │
+                            [ R2a 4,7 kΩ ]
+                                 │
+                            [ R2b 4,7 kΩ ]   (R2 = 2 × 4,7 kΩ en série = 9,4 kΩ)
+                                 │
+Broche 7 (masse) ────────────────┴── GND (ESP32)
 ```
 
-Le GPIO18 reçoit ≈ 3,3 V à l'état haut. **Mesurez vos résistances** avant de souder (les résistances bleues à 5 anneaux du tiroir font peut-être 100 Ω : elles ne conviennent pas).
+Tension sur le GPIO18 : 5 V × 9,4 / (4,7 + 9,4) = **3,33 V** à l'état haut, bien reconnue par l'ESP32.
+
+- **Vérification avant de brancher l'ESP32**, spa sous tension : au point milieu (côté GPIO18), le multimètre doit afficher **environ 2,8 V** (moyenne d'un signal qui monte à 3,3 V), **jamais plus de 3,5 V**.
+- **Autres valeurs possibles** (rapport 1:2) : 1 kΩ + 2,2 kΩ, 2,2 kΩ + 4,7 kΩ, 3,3 kΩ + 6,8 kΩ, 4,7 kΩ + 10 kΩ, 10 kΩ + 22 kΩ, ou 3 résistances identiques entre 1 et 47 kΩ (1 en haut, 2 en série en bas).
+- **À éviter** : deux résistances identiques seulement (2,5 V, trop juste), des valeurs **sous 1 kΩ** (trop de courant tiré sur le signal du spa), et le branchement direct.
 
 ### Alimentation
 
@@ -106,11 +114,11 @@ Branchement : broche **6** du spa → entrée **+** du module, broche **7** (ou 
 ## Quand tout est reçu : déroulé du montage
 
 1. **Préparer le câble Micro-Fit :** repérer au multimètre (continuité) quel fil arrive sur les broches 1, 3, 5, 6 et 7 de la prise. Les couleurs des fils ne veulent rien dire. Isoler les fils 2, 4, 6 et 8.
-2. **Souder le pont diviseur** (R1, R2) et le vérifier au multimètre.
+2. **Souder le pont diviseur** (R1 = 4,7 kΩ, R2 = 2 × 4,7 kΩ en série) et vérifier les valeurs au multimètre.
 3. **Câbler** l'ESP32 et le module RS485 selon le schéma, avec une masse commune.
 4. **Installer le firmware** sur l'ESP32 depuis l'ordinateur (voir plus bas), **avant** de le brancher au spa.
 5. **Couper le spa au tableau**, brancher la prise sur **J70**, ergot à gauche comme celle du ML700 sur J72.
-6. Remettre le spa sous tension. Avant de brancher l'ESP32, **mesurer le point milieu du pont diviseur** : ≈ 3,2 à 3,3 V maximum.
+6. Remettre le spa sous tension. Avant de brancher l'ESP32, **mesurer le point milieu du pont diviseur** : environ 2,8 V, jamais plus de 3,5 V.
 7. Brancher l'ESP32 sur le **chargeur USB**, se connecter au Wi-Fi « Jacuzzi-Setup », puis ouvrir **http://jacuzzi.local**.
 8. **Test en lecture seule :** la température et le mode affichés doivent correspondre au ML700.
    - Aucune donnée : **inverser les fils A et B**.
