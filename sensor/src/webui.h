@@ -241,7 +241,21 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
       <button class="btn sm" id="schedAddO">+ Ajouter une date</button>
       <div><button class="btn primary" id="schedSave">Enregistrer la programmation</button></div>
       <p class="small">Le module change le mode à l'heure dite, comme si vous appuyiez sur les touches. Exemple pour un spa peu utilisé : Standard le vendredi à 18:00, Économie le dimanche à 20:00. Prévoyez la montée en température (environ 12 à 24 h en hiver).</p>
-      <p class="small">Les horaires de <b>filtration</b> du spa restent ceux réglés sur le clavier : leur réglage depuis cette page viendra après le relevé des menus du clavier avec l'espion.</p>
+      <p class="small">Cette programmation est celle du <b>module</b> : il suit l'heure exacte d'Internet (changements d'heure été/hiver compris) et envoie les ordres au spa le moment venu.</p>
+    </section>
+    <section class="card">
+      <div class="label">Horloge du spa</div>
+      <div class="small" id="ckInfo"></div>
+      <div class="frow"><input type="checkbox" id="ckAuto"><label for="ckAuto" style="font-size:15px">Mise à l'heure automatique du spa</label></div>
+      <p class="small">Le spa a sa propre horloge, qui commande ses cycles de filtration. Quand elle s'écarte de 2 min ou plus de l'heure exacte (par exemple la nuit du changement d'heure), le module la corrige en rejouant les touches Time, Mode/Prog, Warm et Cool, avec une vérification à chaque appui. Le réglage automatique ne démarre qu'après une <b>première mise à l'heure réussie</b> avec le bouton ci-dessous, et jamais pendant que la pompe 2, la pompe 1 en vitesse 2 ou l'éclairage sont en marche.</p>
+      <button class="btn" id="ckSync">Mettre le spa à l'heure maintenant</button>
+      <div class="small" id="ckLast" style="margin-top:8px"></div>
+    </section>
+    <section class="card">
+      <div class="label">Cycles de filtration du spa</div>
+      <p class="small">Les cycles de filtration sont exécutés par le spa, selon son horloge. Le <b>relevé</b> parcourt leurs réglages au clavier (Time puis Mode/Prog uniquement) <b>sans rien modifier</b> et note ce que le spa affiche à chaque étape. Il sert à confirmer le format de ces menus sur votre ML700, avant d'activer leur réglage depuis cette page.</p>
+      <button class="btn" id="frRead">Relever les cycles de filtration</button>
+      <div class="log" id="frSteps" style="max-height:none"></div>
     </section>
   </details>
 
@@ -766,7 +780,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
       var txt='';
       if(r.now){ var mod=new Date(r.now*1000); txt='Heure du module : '+p2(mod.getHours())+':'+p2(mod.getMinutes());
         if(r.spa && /^\d\d:\d\d$/.test(r.spa)){ var a=r.spa.split(':'), diff=((+a[0])*60+(+a[1]))-(mod.getHours()*60+mod.getMinutes()); if(diff>720) diff-=1440; if(diff<-720) diff+=1440;
-          txt+=' · heure du spa : '+r.spa+(Math.abs(diff)>=2?' (écart de '+Math.abs(diff)+' min : à corriger sur le clavier)':' (à l\'heure)'); }
+          txt+=' · heure du spa : '+r.spa+(Math.abs(diff)>=2?' (écart de '+Math.abs(diff)+' min, voir « Horloge du spa »)':' (à l\'heure)'); }
       } else txt='Heure du module inconnue (pas d\'accès à Internet) : la programmation attend que l\'heure soit connue.';
       $('schedClock').textContent=txt;
     });
@@ -782,7 +796,40 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
     var q='en='+(SC.en?1:0)+'&w='+SC.w.map(function(w){ return w.join('-'); }).join(',')+'&o='+SC.o.map(function(o){ return o.join('-'); }).join(',');
     post('/api/sched?'+q).then(function(r){ toast(r.ok?'Programmation enregistrée':'Programmation refusée'); loadSched(); });
   };
-  $('schedBox').addEventListener('toggle',function(){ if($('schedBox').open) loadSched(); });
+  $('schedBox').addEventListener('toggle',function(){ if($('schedBox').open){ loadSched(); loadClock(); } });
+
+  // ---- spa clock and filter cycle read-out ----
+  var CK={job:'', timer:null};
+  var CK_ERR={nokey:'Code de touche manquant (Time, Mode, Warm ou Cool)',nopanel:'Signal de sélection non détecté',notime:'Heure exacte inconnue (pas d\'accès à Internet)',nospatime:'Heure du spa non lue : réglez-la une fois au clavier',busy:'Le spa n\'est pas au repos (menu ouvert ou commandes en cours), réessayez dans quelques secondes'};
+  function loadClock(){
+    api('/api/clock').then(function(r){
+      if(!r || r.auto===undefined) return;
+      CK.job=r.job||'';
+      if(document.activeElement!==$('ckAuto')) $('ckAuto').checked=!!r.auto;
+      $('ckAuto').disabled=false;
+      var t='';
+      if(!r.now) t='Heure exacte inconnue : le module attend l\'accès à Internet.';
+      else { var n=new Date(r.now*1000); t='Heure exacte : '+p2(n.getHours())+':'+p2(n.getMinutes());
+        t+=r.spa?(' · heure du spa : '+r.spa+(r.diff===null?'':(Math.abs(r.diff)<2?' (à l\'heure)':' (écart de '+r.diff+' min)'))):' · heure du spa non lue'; }
+      if(!r.ok) t+=' · réglage automatique en attente d\'une première mise à l\'heure réussie';
+      $('ckInfo').textContent=t;
+      var l=r.job==='sync'?'Mise à l\'heure en cours… (les autres commandes attendent)':r.job==='fread'?'Relevé en cours…':'';
+      if(!l && r.last){ var d=new Date(r.lastAt*1000); l=(r.lastOk?'✓ ':'⚠ ')+(r.lastAt?fmtWhen(r.lastAt)+' : ':'')+r.last; }
+      $('ckLast').textContent=l;
+      $('ckLast').style.color=(!r.job && r.last && !r.lastOk)?'var(--warm)':'';
+      $('ckSync').disabled=!!r.job; $('frRead').disabled=!!r.job;
+      var fs=r.fr&&r.fr.steps||[], box=$('frSteps'); box.innerHTML='';
+      if(fs.length){
+        var h=document.createElement('div'); h.className='small'; h.textContent='Relevé '+(r.fr.at?fmtWhen(r.fr.at):'')+(r.fr.done?'':' (en cours)')+' : touche → menu · affichage'; box.appendChild(h);
+        fs.forEach(function(s,i){ var d=document.createElement('div'); d.textContent=(i+1)+'. '+s[0]+' → menu '+s[1]+' · « '+s[2]+' »'; d.title=s[3]; box.appendChild(d); });
+      }
+      clearTimeout(CK.timer);
+      if(r.job) CK.timer=setTimeout(loadClock,1500);
+    });
+  }
+  $('ckAuto').onchange=function(){ var on=this.checked; post('/api/clock?auto='+(on?1:0)).then(function(r){ toast(r.ok?(on?'Mise à l\'heure automatique activée':'Mise à l\'heure automatique désactivée'):'Échec'); loadClock(); }); };
+  $('ckSync').onclick=function(){ post('/api/clock/sync').then(function(r){ toast(r.ok?'Mise à l\'heure du spa lancée':(CK_ERR[r.msg]||'Impossible pour le moment')); loadClock(); }); };
+  $('frRead').onclick=function(){ post('/api/clock/fread').then(function(r){ toast(r.ok?'Relevé lancé':(CK_ERR[r.msg]||'Impossible pour le moment')); loadClock(); }); };
   loadKeys(); loadSched(false); setInterval(function(){ loadSched(false); },300000);
 
   // ---- page settings (stored on the module, same on every phone) ----

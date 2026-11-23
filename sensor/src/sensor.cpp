@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.8.2"
+#define FW_VERSION "1.9.0"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -205,6 +205,15 @@ int pump1Lvl = 0;                     // 0 off, 1 low, 2 high, as reported by th
 int pump2Lvl = 0;
 uint32_t badStartBytes = 0;           // serial noise counters, summarised in the log once a minute
 uint32_t readTimeouts = 0;
+// Last FA status frame, for the procedures that walk through the panel menus (spaclock.h)
+String faMenu = "";                   // byte 9: 00 idle, 4c mode menu, 46 set temperature, others: other menus
+String faDisp = "";                   // the 4 display characters (e.g. "380C")
+String faHex = "";                    // the whole frame, in hex
+int spaHour = -1;                     // spa clock from bytes 14-15 (-1: not set / not seen yet)
+int spaMin = -1;
+unsigned long faAt = 0;               // millis() of the last FA frame
+uint32_t cmdAckCount = 0;             // commands acknowledged by the controller since boot
+bool kbProc = false;                  // a key sequence (clock setting, filter read-out) is running
 
 bool setTargetTemperature(float temperatureFloat);
 void setModeIdx(int m);
@@ -223,6 +232,7 @@ void attachPanelInterrupt();
 #include "spy.h"
 #include "keys.h"
 #include "modesched.h"
+#include "spaclock.h"
 
 byte nibble(char c);
 void hexCharacterStringToBytes(byte* byteArray, const char* hexString);
@@ -630,6 +640,7 @@ void setup() {
     logBegin(bootCount, rr == ESP_RST_POWERON || rr == ESP_RST_BROWNOUT);
     keysLoad();   // button codes changed from the page
     schedLoad();  // heating mode schedule
+    clockLoad();  // spa clock setting
     logAdd('S', "Démarrage n°" + String(bootCount) + ", cause : " + bootReason + ", firmware " FW_VERSION);
     prefs.getString("mqttHost", "").toCharArray(mqttHost, sizeof(mqttHost));
     prefs.getString("mqttPort", "1883").toCharArray(mqttPort, sizeof(mqttPort));
@@ -756,6 +767,10 @@ void setup() {
     webserver.on("/api/keys", HTTP_POST, handleApiKeysPost);
     webserver.on("/api/sched", HTTP_GET, handleApiSchedGet);
     webserver.on("/api/sched", HTTP_POST, handleApiSchedPost);
+    webserver.on("/api/clock", HTTP_GET, handleApiClockGet);
+    webserver.on("/api/clock", HTTP_POST, handleApiClockPost);
+    webserver.on("/api/clock/sync", HTTP_POST, handleApiClockSync);
+    webserver.on("/api/clock/fread", HTTP_POST, handleApiFilterRead);
     webserver.on("/manifest.webmanifest", handleManifest);
     webserver.on("/icon-180.png", handleIcon180);
     webserver.on("/icon-192.png", handleIcon192);
@@ -994,6 +1009,7 @@ void loop() {
 
     historyTick();
     schedTick();
+    clockTick();
     watchdogTick();
     logTick();
 
@@ -1018,6 +1034,43 @@ void handleMessage(size_t len, uint8_t buf[]) {
         result += String(buf[i], HEX);
     }
     if (result.substring(0, 4) == "fa14") {
+        // Fields read from every FA frame, whatever the display shows. In the clock and filter menus the
+        // display is not a temperature, and the acknowledgement used to be read only for temperatures:
+        // every key pressed in those menus was then taken as lost.
+        faAt = millis();
+        faHex = result;
+        faDisp = HexString2ASCIIString(result.substring(4, 12));
+        faMenu = result.substring(18, 20);
+        if (result.length() >= 32 && result.substring(28, 32) != "ffff") {
+            int hh = strtol(result.substring(28, 30).c_str(), NULL, 16);
+            int mm = strtol(result.substring(30, 32).c_str(), NULL, 16);
+            if (hh < 24 && mm < 60) {
+                spaHour = hh;
+                spaMin = mm;
+            }
+        } else {
+            spaHour = -1;
+            spaMin = -1;
+        }
+        if (result.length() >= 44) {
+            String cmd = result.substring(34, 44);
+            if (!lastRaw3.equals(cmd)) {
+                // Controller accepted our command: it echoes the button code. Going back to all zeros is
+                // only the release of the previous press, so it does not count (counting it made the
+                // next command look accepted when it was actually lost).
+                if (commandPending && !sendBuffer.isEmpty() && cmd != "0000000000") {
+                    String h = sendBuffer.getHead();
+                    logAdd('T', "Acceptée : " + cmdName(h) + " (" + String(headTries) + " envois), réponse cmd=" + cmd);
+                    dropHead();
+                    cmdAckCount++;
+                    timeSinceMsgStartSensor.setValue((int) timeSinceMsgStart);
+                }
+                lastRaw3 = cmd;
+                if (cmd != "0000000000") {  // ignore idle command
+                    rawData3.setValue(lastRaw3.c_str());
+                }
+            }
+        }
         // Serial.println("FA 14");
         // telnetSend(result);
 
@@ -1161,21 +1214,7 @@ void handleMessage(size_t len, uint8_t buf[]) {
                 } else {
                     telnetSend("CMD: " + cmd);
                 }
-                if (!lastRaw3.equals(cmd)) {
-                    // Controller accepted our command: it echoes the button code. Going back to all zeros is
-                    // only the release of the previous press, so it does not count (counting it made the
-                    // next command look accepted when it was actually lost).
-                    if(commandPending && !sendBuffer.isEmpty() && cmd != "0000000000") {
-                        String h = sendBuffer.getHead();
-                        logAdd('T', "Acceptée : " + cmdName(h) + " (" + String(headTries) + " envois), réponse cmd=" + cmd);
-                        dropHead();
-                        timeSinceMsgStartSensor.setValue((int) timeSinceMsgStart);
-                    }
-                    lastRaw3 = cmd;
-                    if(cmd != "0000000000") {  // ignore idle command
-                        rawData3.setValue(lastRaw3.c_str());
-                    }
-                }
+                // (the acknowledgement of our commands is read above, for every FA frame)
 
 
                 if (result.substring(10, 12) == "43" || result.substring(10, 12) == "46") {  // "C" or "F"

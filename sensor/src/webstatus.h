@@ -101,6 +101,10 @@ void handleApiStatus() {
 // Each action is one simulated button press on the topside panel.
 void handleApiCmd() {
   String a = webserver.arg("a");
+  if (kbProc) {   // the module is walking through the panel menus (clock setting, filter read-out)
+    sendApiResult(false, "busy");
+    return;
+  }
   if (otaTask) {
     sendApiResult(false, "busy");
     return;
@@ -146,6 +150,10 @@ void handleApiCmd() {
 
 // /api/target?t=37.5   (0.5 degree steps, 26-40 C)
 void handleApiTarget() {
+  if (kbProc) {   // the module is walking through the panel menus (clock setting, filter read-out)
+    sendApiResult(false, "busy");
+    return;
+  }
   if (!webserver.hasArg("t")) {
     sendApiResult(false, "missing t");
     return;
@@ -173,7 +181,7 @@ void handleApiTarget() {
 String requestMode(int m, const char* who) {
   if (!panelDetected) return "nopanel";
   if (m < 0 || m > 2) return "bad mode";
-  if (otaTask) return "busy";
+  if (otaTask || kbProc) return "busy";
   int currentIndex = modeIdx;
   if (currentIndex < 0) return "mode unknown";
   if (currentIndex == m) return "no change";
@@ -260,6 +268,10 @@ void handleApiSendHex() {
   for (size_t i = 0; ok && i < h.length(); i++) ok = isxdigit((unsigned char)h[i]);
   if (!ok) {
     sendApiResult(false, "bad code");
+    return;
+  }
+  if (kbProc) {   // the module is walking through the panel menus (clock setting, filter read-out)
+    sendApiResult(false, "busy");
     return;
   }
   if (!panelDetected) {
