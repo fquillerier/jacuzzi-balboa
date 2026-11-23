@@ -76,6 +76,25 @@ Le fil de discussion à l'origine du projet ([ccutrer/balboa_worldwide_app #14](
 
 ### Schéma complet
 
+Schéma pour le matériel acheté : ESP32 DevKitC V4 (WROOM-32U, USB-C), module TTL–RS485 à sens automatique (bornier A+ / B− / ⏚, connecteur VCC TXD RXD GND), câble Micro-Fit 8 points à fils nus.
+
+![Câblage exact](docs/cablage.png)
+
+| De | Vers | Remarque |
+|---|---|---|
+| Câble circuit 1 (masse) | ESP32 **GND** (colonne droite, 6ᵉ broche) | et bas de R2 |
+| Câble circuit 2 (sélection) | **R1 4,7 kΩ** → ESP32 **GPIO18** | R2 (2 × 4,7 kΩ) entre GPIO18 et masse |
+| Câble circuit 3 (A) | module **A+** | |
+| Câble circuit 4 (B) | module **B−** | inverser A/B si aucune trame |
+| Câble circuits 5, 6, 7, 8 | isolés | 6 = 9 V, jamais sur l'ESP32 |
+| Module **RXD** | ESP32 **GPIO19** | pas la broche « RX » |
+| Module **TXD** | ESP32 **GPIO23** | pas la broche « TX » |
+| Module **VCC** | ESP32 **3V3** | pas 5V |
+| Module **GND** | ESP32 **GND** (colonne gauche, sous 19) | |
+| Module **⏚** | rien | |
+
+Schéma de principe (ancienne version, toujours valable) :
+
 ![Schéma de montage complet](docs/montage.svg)
 
 | Module RS485 | ESP32 |
