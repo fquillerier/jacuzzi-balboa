@@ -81,7 +81,7 @@ summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 2px}
 .ch-txt{fill:var(--muted);font-size:10px}
 .fld{display:block;font-size:14px;margin:4px 0 12px}
 .fld input{display:block;width:100%;margin-top:6px}
-input[type=text]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+input[type=text],input[type=number]{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
 .frow{display:flex;align-items:center;gap:10px;padding:6px 0}
 .frow input[type=text]{flex:1;min-width:0}
 .frow input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}

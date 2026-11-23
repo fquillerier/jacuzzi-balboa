@@ -2,6 +2,9 @@
 
 Chaque section s'affiche comme note lors de la mise à jour en ligne (Réglages et informations → Rechercher une mise à jour).
 
+## 1.9.1
+- Veille hors-gel : au passage en Veille, la consigne est d'abord abaissée à 26 °C (eau maintenue vers 15 °C) ; à la sortie, le mode est rétabli puis la consigne de retour (celle d'avant la veille, 34 °C par défaut). S'applique aux boutons de la page, à la programmation et, en option, aux changements faits au clavier du spa. Réglable dans Programmation → Veille hors-gel.
+
 ## 1.9.0
 - Horloge du spa : mise à l'heure depuis la page (touches Time, Mode/Prog, Warm, Cool, avec vérification à chaque appui) et mise à l'heure automatique quand l'écart atteint 2 min, changements d'heure été/hiver compris. L'automatique démarre après une première mise à l'heure réussie.
 - Relevé des cycles de filtration (lecture seule, Time puis Mode/Prog) : affichage et code de menu notés à chaque étape, pour préparer leur réglage depuis la page.

@@ -226,6 +226,18 @@ Section **Programmation** de la page. Le module change le mode (Standard / Écon
 - Si le changement est impossible sur le moment (mode inconnu, commandes en cours), le module réessaie pendant 15 minutes.
 - Cette programmation est celle du **module** : c'est lui qui suit l'heure exacte et envoie les ordres au spa.
 
+### Veille hors-gel (consigne abaissée en veille)
+
+En mode **Veille**, le spa ne chauffe que pendant ses cycles de filtration, jusqu'à **la consigne − 11 °C** (manuel ML700). Avec la consigne au minimum (26 °C), l'eau est maintenue vers **15 °C** au lieu de 23 °C avec 34 °C.
+
+- **Passage en Veille** (bouton de la page, programmation ou clavier) : le module met d'abord la consigne à **26 °C**, vérifie qu'elle est prise, puis passe en Veille.
+- **Sortie de veille** : mode choisi, puis consigne **de retour** (34 °C par défaut). Cette valeur est remplacée automatiquement par la consigne en cours à chaque passage en veille : si vous étiez à 36 °C, c'est 36 °C qui revient.
+- **Changement au clavier du spa** (option cochée par défaut) : si le mode passe en Veille ou en sort au clavier et reste stable 1 min, le module applique la même règle (6 fois par jour au maximum).
+- Chaque étape est relue sur le bus (consigne, mode) et refaite jusqu'à 4 fois. Les autres commandes attendent pendant la séquence (une vingtaine de secondes).
+- Remontée de 15 °C à 34 °C : environ 22 kWh pour 1 000 L d'eau, soit **au moins 8 h** avec le chauffage de 3 kW, plutôt **12 à 24 h en hiver**. Programmez la sortie de veille en conséquence.
+
+<img src="docs/ecrans/8-veille.png" width="300" alt="Veille hors-gel">
+
 ### Horloge du spa (mise à l'heure automatique)
 
 Le spa a sa propre horloge, qui commande ses **cycles de filtration**. Le module la tient à l'heure exacte d'Internet, **changements d'heure été/hiver compris** :
