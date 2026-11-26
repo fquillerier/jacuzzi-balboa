@@ -2,6 +2,9 @@
 
 Chaque section s'affiche comme note lors de la mise à jour en ligne (Réglages et informations → Rechercher une mise à jour).
 
+## 1.9.3
+- Apprentissage guidé des touches (Réglages → Codes des touches) : pour chaque touche, la page demande d'appuyer sur le clavier du spa, relève le code, le compare au code enregistré, le teste en l'envoyant au spa et l'enregistre ; résumé final copiable. Un code testé sans réaction n'est pas enregistré. Nouvelle route `/api/learn` (dernière touche vue sur le bus).
+
 ## 1.9.2
 - Arrêt temporaire (Standby, menu 0x5A : Warm ou Cool puis Jets 2, retour automatique au bout d'1 h) reconnu et affiché, même quand l'écran du spa n'affiche pas la température. Pendant ce temps, changement de mode, consigne, veille hors-gel et mise à l'heure attendent (un appui ne ferait que sortir du Standby) ; un changement programmé est retenté jusqu'à 75 min.
 - Chauffage à trois états : arrêt, chauffe, « contrôle de la température » (la pompe tourne pour mesurer l'eau). Le nouveau champ `heat` (0, 1, 2) s'ajoute à `heater` dans /api/status, avec `standby`.

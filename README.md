@@ -178,7 +178,7 @@ Les **mises à jour** se font ensuite par Wi-Fi ; il n'est plus nécessaire de r
 8. **Test en lecture seule :** la température et le mode affichés doivent correspondre au ML700.
    - Aucune donnée : **inverser les fils A et B**.
    - « Signal de sélection non détecté » : vérifier le fil du circuit 2 et le pont diviseur.
-9. **Capturer les touches** du ML700 (voir ci-dessous), puis tester un changement de mode Économie → Standard depuis la page.
+9. **Apprentissage guidé des touches** du ML700 (voir ci-dessous), puis tester un changement de mode Économie → Standard depuis la page.
    - Puis **Programmation → « Mettre le spa à l'heure maintenant »** (cela active la mise à l'heure automatique), et **« Relever les cycles de filtration »** : exporter le journal pour la suite.
 10. Installation définitive dans le boîtier IP65, câble passé par un presse-étoupe.
 
@@ -246,11 +246,20 @@ Captures de la page **http://jacuzzi.local** sur un téléphone, **avec des donn
 
 ## Vérifier les codes de votre clavier (premier test)
 
-Les codes des touches viennent de claviers de GL2000. Avant de compter dessus :
+Les codes des touches par défaut viennent de claviers de GL2000 ; celui de **Time** a même un en-tête différent des autres. Avant de compter dessus, faites l'**apprentissage guidé** :
 
-1. Ouvrez **Journal (dépannage)** et cochez **Capturer les touches du clavier du spa**.
-2. Appuyez sur une touche du clavier du spa (ML700…), puis notez-la avec **Ajouter la note**.
-3. Le code apparaît avec la lettre **P**. Comparez-le à ceux de `sensor/src/constants.h`. Un bouton **Envoyer** permet de le rejouer pour tester.
+1. **Réglages et informations → Codes des touches → « Apprentissage guidé des touches »**.
+2. Pour chaque touche (Warm, Cool, Mode, Light, Jets 1, 2, 3, Blower, Time), la page vous demande d'**appuyer une fois sur cette touche du clavier du spa** et indique ce que le spa doit faire.
+3. Le code relevé s'affiche, comparé au code enregistré : identique, différent (il le remplacera) ou nouveau. Un avertissement apparaît si deux touches donnent le même code.
+4. **« Tester ce code »** l'envoie au spa ; répondez si le spa a réagi comme avec la touche. Un code testé sans réaction n'est pas enregistré.
+5. **« Passer »** pour une touche absente (par exemple un blower commandé par un bouton à air, hors du clavier).
+6. À la fin, un **résumé** liste chaque touche et son état ; **« Copier le résumé »** pour me l'envoyer. Pensez à arrêter les pompes ou l'éclairage restés en marche.
+
+Les appuis sur Warm, Cool, Mode et Time ne font qu'afficher (consigne, mode, heure) : rien n'est modifié. Light et Jets changent l'état de l'éclairage ou des pompes.
+
+<img src="docs/ecrans/9-apprentissage.png" width="300" alt="Apprentissage : code relevé"> <img src="docs/ecrans/9-apprentissage-resume.png" width="300" alt="Apprentissage : résumé">
+
+Méthode manuelle, toujours disponible : **Journal (dépannage) → « Capturer les touches du clavier du spa »** ; les codes apparaissent avec la lettre **P**, à copier dans les champs des codes.
 
 ## Programmation des modes de chauffe
 

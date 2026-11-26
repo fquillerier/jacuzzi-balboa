@@ -61,6 +61,13 @@ summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 2px}
 .kv:last-child{border-bottom:0}
 .btn{display:inline-block;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:10px 14px;font:inherit;font-size:14px;cursor:pointer;text-decoration:none;margin:8px 8px 0 0}
 .btn.danger{color:#b91c1c}
+.learn{margin:10px 0;padding:12px;border:2px solid var(--accent);border-radius:12px}
+.learn h4{margin:0 0 6px;font-size:16px}
+.learn .code{font:15px ui-monospace,monospace;word-break:break-all;margin:6px 0}
+.learn .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.learn table{width:100%;border-collapse:collapse;font-size:13px}
+.learn td{padding:4px 2px;border-bottom:1px solid var(--line);vertical-align:top}
+.learn .ok{color:var(--ok)}.learn .ko{color:var(--warn)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
 .toast.show{opacity:1}
 .hide{display:none!important}
@@ -204,7 +211,9 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
     </section>
     <section class="card">
       <div class="label">Codes des touches (avancé)</div>
-      <p class="small" style="margin:4px 0 6px">Codes envoyés au spa pour chaque touche du clavier. Pour les relever : Journal (dépannage) → « Capturer les touches du clavier du spa », puis copiez ici le code affiché avec la lettre « P ». Laissez vide pour revenir au code par défaut.</p>
+      <p class="small" style="margin:4px 0 6px">Codes envoyés au spa pour chaque touche du clavier. Le plus simple : l'<b>apprentissage guidé</b>, qui vous fait appuyer sur chaque touche du clavier du spa, relève son code, le compare au code enregistré et le teste. Un champ vide remet le code par défaut.</p>
+      <button class="btn primary" id="lnStart">Apprentissage guidé des touches</button>
+      <div id="learn" class="learn" hidden></div>
       <div id="keyRows"></div>
     </section>
     <section class="card">
@@ -739,6 +748,108 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
       box.appendChild(row);
     });
   }
+
+  // ---- guided key learning ----
+  var LN=null;
+  var LN_HINT={
+    up:['L\'écran affiche la consigne, sans la changer.','Le spa doit afficher la consigne, comme avec la touche.'],
+    down:['L\'écran affiche la consigne, sans la changer.','Le spa doit afficher la consigne.'],
+    mode:['Le mode en cours clignote, puis se referme seul sans changement.','Le mode en cours doit clignoter, puis se refermer seul.'],
+    light:['L\'éclairage s\'allume ou s\'éteint.','L\'éclairage doit changer d\'état (rappuyez ensuite si besoin).'],
+    jet1:['La pompe 1 démarre ou change de vitesse.','La pompe 1 doit démarrer ou changer de vitesse.'],
+    jet2:['La pompe 2 démarre.','La pompe 2 doit démarrer ou s\'arrêter.'],
+    jet3:['La pompe 3 démarre. Si votre clavier n\'a pas de touche Jets 3, utilisez « Passer ».','La pompe 3 doit démarrer ou s\'arrêter.'],
+    aux:['Le blower démarre. S\'il a un bouton à part, hors du clavier (bouton à air), aucun code n\'arrivera : « Passer ».','Le blower doit démarrer ou s\'arrêter.'],
+    time:['L\'écran affiche l\'heure du spa.','L\'écran doit afficher l\'heure.']
+  };
+  function lnEl(tag,txt,cls){ var e=document.createElement(tag); if(txt!==undefined) e.textContent=txt; if(cls) e.className=cls; return e; }
+  function lnBtn(txt,fn,cls){ var b=lnEl('button',txt,'btn sm'+(cls?' '+cls:'')); b.onclick=fn; return b; }
+  function lnKey(){ return LN.keys[LN.i]; }
+  function lnStop(silent){
+    if(!LN) return;
+    clearTimeout(LN.timer);
+    if(!LN.sniffWas) post('/api/log/sniff?on=0');
+    $('learn').hidden=true; $('lnStart').hidden=false;
+    LN=null; if(!silent) toast('Apprentissage arrêté');
+    loadKeys();
+  }
+  function lnPoll(){
+    if(!LN || LN.phase!=='wait') return;
+    api('/api/learn').then(function(r){
+      if(!LN || LN.phase!=='wait' || !r) return;
+      if(!r.panel){ LN.note='Signal de sélection non détecté : le module ne voit pas le bus.'; lnRender(); }
+      if(r.seq>LN.seq && r.code){ LN.seq=r.seq; LN.got=r.code; LN.phase='got'; LN.tested=false; lnRender(); return; }
+      LN.timer=setTimeout(lnPoll,500);
+    }).catch(function(){ if(LN) LN.timer=setTimeout(lnPoll,1500); });
+  }
+  function lnWait(){
+    LN.phase='wait'; LN.got=''; LN.note='';
+    lnRender();
+    api('/api/learn').then(function(r){ if(!LN) return; LN.seq=r&&r.seq||0; lnPoll(); });
+  }
+  function lnRecord(status){
+    var k=lnKey(); LN.res[k.id]={code:LN.got, status:status};
+    var go=function(){ LN.i++; if(LN.i>=LN.keys.length){ LN.phase='done'; lnRender(); } else lnWait(); };
+    if(LN.got && LN.got!==k.code && status!=='à vérifier'){ post('/api/keys?id='+k.id+'&h='+LN.got).then(function(r){ if(!r.ok) toast('Code refusé par le module'); go(); }); }
+    else go();
+  }
+  function lnRender(){
+    var box=$('learn'); box.textContent=''; if(!LN) return;
+    if(LN.phase==='done'){
+      box.appendChild(lnEl('h4','Apprentissage terminé'));
+      var t=lnEl('table'), lines=['Codes des touches (apprentissage du '+new Date().toLocaleString('fr-FR')+')'];
+      LN.keys.forEach(function(k){
+        var r=LN.res[k.id]||{status:'passée'}, tr=lnEl('tr');
+        var st={'testée':'✓ relevée et testée','relevée':'relevée, non testée','à vérifier':'⚠ testée sans réaction, non enregistrée','passée':'passée'}[r.status]||r.status;
+        tr.appendChild(lnEl('td',k.name)); tr.appendChild(lnEl('td',r.code||'—','code')); tr.appendChild(lnEl('td',st,r.status==='testée'?'ok':(r.status==='à vérifier'?'ko':'')));
+        t.appendChild(tr); lines.push(k.name+' : '+(r.code||'—')+' ('+st+')');
+      });
+      box.appendChild(t);
+      box.appendChild(lnEl('p','Les codes relevés sont enregistrés dans le module (sauf ceux testés sans réaction). Pensez à arrêter les pompes ou l\'éclairage restés en marche.','small'));
+      var b=lnEl('div',undefined,'btns');
+      b.appendChild(lnBtn('Copier le résumé',function(){ var txt=lines.join('\n'); (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(function(){ toast('Résumé copié'); },function(){ prompt('Copiez le résumé :',txt); }); }));
+      b.appendChild(lnBtn('Fermer',function(){ lnStop(true); },'primary'));
+      box.appendChild(b); return;
+    }
+    var k=lnKey(), hint=LN_HINT[k.id]||['',''];
+    box.appendChild(lnEl('h4','Touche '+(LN.i+1)+' / '+LN.keys.length+' : '+k.name));
+    if(LN.phase==='wait'){
+      box.appendChild(lnEl('p','Appuyez une fois sur cette touche du clavier du spa.'));
+      box.appendChild(lnEl('p','Attendu : '+hint[0],'small'));
+      box.appendChild(lnEl('p','En attente du code…','small'));
+      if(LN.note) box.appendChild(lnEl('p',LN.note,'small ko'));
+    } else {
+      box.appendChild(lnEl('div',LN.got,'code'));
+      var same=null; Object.keys(LN.res).forEach(function(id){ if(LN.res[id].code===LN.got){ same=id; } });
+      var msg = LN.got===k.code ? ['✓ Identique au code enregistré.','ok'] : (k.code ? ['Différent du code enregistré ('+k.code+') : il le remplacera.','ko'] : ['Nouveau code (aucun enregistré pour cette touche).','ok']);
+      box.appendChild(lnEl('p',msg[0],'small '+msg[1]));
+      if(same){ var sk=LN.keys.filter(function(x){ return x.id===same; })[0]; box.appendChild(lnEl('p','⚠ Même code que « '+(sk?sk.name:same)+' » : vérifiez que vous avez appuyé sur la bonne touche.','small ko')); }
+      if(LN.tested) box.appendChild(lnEl('p','Code envoyé au spa. Attendu : '+hint[1]+' Le spa a-t-il réagi ?','small'));
+    }
+    var b=lnEl('div',undefined,'btns');
+    if(LN.phase==='got'){
+      if(!LN.tested){
+        b.appendChild(lnBtn('Tester ce code',function(){ post('/api/sendhex?h='+LN.got).then(function(r){ if(r.ok){ LN.tested=true; lnRender(); } else toast(r.msg==='busy'?'Le module est occupé, réessayez':(r.msg==='nopanel'?'Signal de sélection non détecté':'Envoi impossible')); }); },'primary'));
+        b.appendChild(lnBtn('Valider sans tester',function(){ lnRecord('relevée'); }));
+      } else {
+        b.appendChild(lnBtn('Oui, il a réagi',function(){ lnRecord('testée'); },'primary'));
+        b.appendChild(lnBtn('Non, rien',function(){ lnRecord('à vérifier'); }));
+      }
+      b.appendChild(lnBtn('Recommencer',lnWait));
+    }
+    b.appendChild(lnBtn('Passer',function(){ LN.got=''; lnRecord('passée'); }));
+    b.appendChild(lnBtn('Arrêter',function(){ lnStop(); },'danger'));
+    box.appendChild(b);
+  }
+  $('lnStart').onclick=function(){
+    if(!KEYS.length){ toast('Codes des touches pas encore chargés, réessayez'); return; }
+    LN={i:0, keys:KEYS.slice(), res:{}, seq:0, phase:'wait', sniffWas:!!S.sniff, timer:null};
+    post('/api/log/sniff?on=1').then(function(r){
+      if(!r.ok){ toast('Impossible d\'activer la capture'); LN=null; return; }
+      $('learn').hidden=false; $('lnStart').hidden=true; lnWait();
+      $('learn').scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  };
 
   // ---- heating mode schedule (runs on the module) ----
   var SC={en:1,w:[],o:[]}, DAYS=['L','M','M','J','V','S','D'], DAYS_LONG=['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];

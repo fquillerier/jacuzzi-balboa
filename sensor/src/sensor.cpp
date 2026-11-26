@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.9.2"
+#define FW_VERSION "1.9.3"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -357,6 +357,9 @@ String resetReasonText(esp_reset_reason_t r) {
 // Button frames look like fb 06 aa bb cc 00 XX ~XX crc. XX = 0 is "no button".
 String snLast = "";
 unsigned long snLastMs = 0;
+uint32_t snSeq = 0;           // one more for each new button press seen (key learning on the web page)
+String snWhere = "";
+unsigned long snAt = 0;
 void notePanelButton(const uint8_t* p, const char* where) {
     if (p[0] != 0xFB || p[1] != 0x06) return;
     if ((uint8_t)(p[6] + p[7]) != 0xFF) return;
@@ -373,7 +376,18 @@ void notePanelButton(const uint8_t* p, const char* where) {
     }
     snLast = h;
     snLastMs = millis();
+    snSeq++;
+    snWhere = where;
+    snAt = millis();
     logAdd('P', "Clavier du spa : " + cmdName(h) + " " + h + " (" + where + ")");
+}
+
+// GET /api/learn -> last button pressed on the spa's own panel (needs the capture on: /api/log/sniff?on=1)
+void handleApiLearn() {
+    webserver.send(200, "application/json",
+                   "{\"sniff\":" + String(sniffOn ? 1 : 0) + ",\"seq\":" + String(snSeq) + ",\"code\":\"" + snLast +
+                       "\",\"where\":\"" + snWhere + "\",\"age\":" + String(snSeq ? millis() - snAt : 0) +
+                       ",\"panel\":" + String(panelDetected ? 1 : 0) + "}");
 }
 
 // While another panel has its turn on the bus, scan the bytes for its button frames
@@ -761,6 +775,7 @@ void setup() {
     webserver.on("/api/log/clear", HTTP_POST, handleApiLogClear);
     webserver.on("/api/log/note", HTTP_POST, handleApiLogNote);
     webserver.on("/api/log/sniff", HTTP_POST, handleApiSniff);
+    webserver.on("/api/learn", HTTP_GET, handleApiLearn);
     webserver.on("/api/queue/clear", HTTP_POST, handleApiQueueClear);
     webserver.on("/api/restart", HTTP_POST, handleApiRestart);
     webserver.on("/api/sendhex", HTTP_POST, handleApiSendHex);
