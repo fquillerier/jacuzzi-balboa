@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.9.1"
+#define FW_VERSION "1.9.2"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -152,6 +152,7 @@ ESP8266WebServer webserver(80);
 int pump1State = 0;
 int pump2State = 0;
 boolean heaterState = false;
+uint8_t heaterVal = 0;  // byte 7 high nibble: 0 off, 1 heating, 2 checking the water temperature (pump runs, heater off)
 boolean lightState = false;
 float tubpowerCalc = 0;
 double tubTemp = -1;
@@ -206,7 +207,7 @@ int pump2Lvl = 0;
 uint32_t badStartBytes = 0;           // serial noise counters, summarised in the log once a minute
 uint32_t readTimeouts = 0;
 // Last FA status frame, for the procedures that walk through the panel menus (spaclock.h)
-String faMenu = "";                   // byte 9: 00 idle, 4c mode menu, 46 set temperature, others: other menus
+String faMenu = "";                   // byte 9: 00 idle, 4c mode menu, 46 set temperature, 5a standby, others: other menus
 String faDisp = "";                   // the 4 display characters (e.g. "380C")
 String faHex = "";                    // the whole frame, in hex
 int spaHour = -1;                     // spa clock from bytes 14-15 (-1: not set / not seen yet)
@@ -1132,6 +1133,7 @@ void handleMessage(size_t len, uint8_t buf[]) {
             }
 
             String heater = result.substring(14, 15);
+            heaterVal = heater == "1" ? 1 : (heater == "2" ? 2 : 0);
             if (heater == "0") {
                 heaterState = false;
             } else if (heater == "1") {
@@ -1191,7 +1193,9 @@ void handleMessage(size_t len, uint8_t buf[]) {
                 } else if (menu == "46") {
                     state = "Set Temperature";
                 } else if (menu == "5a") {
-                    state = "Standby?";  // WT: not tested to confirm if this is the act of setting Standby or just seen
+                    // Standby (ML700 guide p.2): Warm or Cool then Jets 2 stops every function, e.g. to change
+                    // the filter; any key leaves it, and the spa goes back to normal by itself after 1 hour.
+                    state = "Standby";
                                          // when in standby
                 } else {                 // 46 for set temp, but also other things like filter time
                     state = "menu " + menu;
@@ -1279,6 +1283,10 @@ void handleMessage(size_t len, uint8_t buf[]) {
         } else {
             // FA but not temp data - the display shows text instead (error codes, messages)
             notePanelMsg(result.substring(4, 12));
+            if (faMenu == "5a" && state != "Standby") {   // Standby: the display shows text, not the temperature
+                state = "Standby";
+                currentState.setValue(state.c_str());
+            }
             if (lastRaw2 != result.substring(4, 28)) {
                 logAdd('R', "Affichage '" + cleanAscii(result.substring(4, 12)) + "' | " + result.substring(4, 46));
             }

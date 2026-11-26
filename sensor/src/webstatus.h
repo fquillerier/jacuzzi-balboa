@@ -33,6 +33,8 @@ String getStatusJSON() {
   j += " \"temp\": \"" + String(tubTemp, 1) + "\"";
   j += ", \"target\": \"" + String(tubTargetTemp, 1) + "\"";
   j += ", \"heater\": " + String(heaterState ? "true" : "false");
+  j += ", \"heat\": " + String(heaterVal);
+  j += ", \"standby\": " + String(faMenu == "5a" ? "true" : "false");
   j += ", \"light\": " + String(lightState ? "true" : "false");
   j += ", \"pump1\": " + String(pump1State);
   j += ", \"pump2\": " + String(pump2State);
@@ -150,6 +152,10 @@ void handleApiCmd() {
 
 // /api/target?t=37.5   (0.5 degree steps, 26-40 C)
 void handleApiTarget() {
+  if (faMenu == "5a") {   // Standby: the first key would only leave it
+    sendApiResult(false, "standby");
+    return;
+  }
   if (kbProc || seqProc) {   // a key sequence is running (clock setting, filter read-out, sleep set-point)
     sendApiResult(false, "busy");
     return;
@@ -184,6 +190,7 @@ String requestMode(int m, const char* who) {
   if (!panelDetected) return "nopanel";
   if (m < 0 || m > 2) return "bad mode";
   if (otaTask || kbProc) return "busy";
+  if (faMenu == "5a") return "standby";   // the first key would only leave the Standby
   int currentIndex = modeIdx;
   if (currentIndex < 0) return "mode unknown";
   if (currentIndex == m) return "no change";

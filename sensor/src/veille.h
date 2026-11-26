@@ -97,6 +97,7 @@ String requestModeV(int m, const char* who) {
   if (!panelDetected) return "nopanel";
   if (m < 0 || m > 2) return "bad mode";
   if (otaTask || kbProc || seqProc) return "busy";
+  if (faMenu == "5a") return "standby";   // the first key would only leave the Standby
   if (!vOn) return requestMode(m, who);
   int cur = modeIdx;
   if (cur < 0) return "mode unknown";

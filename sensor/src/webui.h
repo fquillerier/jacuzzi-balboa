@@ -333,7 +333,8 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
   var S = {};
   var desired = null, desiredTimer = null, lastMsg = 0, ws = null, pollTimer = null;
   var MODE_NAMES = ['Standard','Économie','Veille'];
-  var STATE_FR = {'Standard':'Standard','Economy':'Économie','Sleep':'Veille','Circulation':'Circulation','Circulation in sleep':'Circulation (veille)','Cleaning':'Nettoyage','Std in Eco':'Standard temporaire (depuis Économie)','Set Mode':'Changement de mode','Set Temperature':'Réglage de la consigne','Temp Up':'Consigne +','Temp Down':'Consigne −','Standby?':'Arrêt temporaire','unknown':'Inconnu','Panel select (pin5) not detected':'Signal de sélection (circuit 2) non détecté'};
+  var STANDBY_MSG='Le spa est en arrêt temporaire (Standby) : réessayez après sa sortie (appui sur une touche du spa, ou automatiquement au bout d\'1 h)';
+  var STATE_FR = {'Standard':'Standard','Economy':'Économie','Sleep':'Veille','Circulation':'Circulation','Circulation in sleep':'Circulation (veille)','Cleaning':'Nettoyage','Std in Eco':'Standard temporaire (depuis Économie)','Set Mode':'Changement de mode','Set Temperature':'Réglage de la consigne','Temp Up':'Consigne +','Temp Down':'Consigne −','Standby':'Arrêt temporaire (Standby) : retour automatique au bout d\'1 h ou à l\'appui d\'une touche du spa','Standby?':'Arrêt temporaire','unknown':'Inconnu','Panel select (pin5) not detected':'Signal de sélection (circuit 2) non détecté'};
 
   function toast(t){ var el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(function(){el.classList.remove('show');},2200); }
 
@@ -347,8 +348,9 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
   function render(){
     var t=fmtTemp(S.temp);
     $('temp').textContent = t===null ? '--' : t.toFixed(1);
-    var heat = !!S.heater;
-    var hb=$('heater'); hb.textContent = heat ? 'Chauffe' : 'Chauffe arrêtée'; hb.className = 'badge'+(heat?' heat':'');
+    var heat = !!S.heater, hv = S.heat;
+    var hb=$('heater'); hb.textContent = hv===2 ? 'Chauffe : contrôle de la température' : (heat ? 'Chauffe' : 'Chauffe arrêtée'); hb.className = 'badge'+(heat?' heat':'');
+    hb.title = hv===2 ? 'La pompe tourne pour mesurer l\'eau ; le spa décide ensuite s\'il chauffe' : '';
     var ttt = parseInt(S.timeToTemp||0,10);
     $('ttt').textContent = (heat && ttt>0) ? ('Prêt dans environ '+(ttt>=60? Math.floor(ttt/60)+' h '+(ttt%60)+' min' : ttt+' min')) : '';
 
@@ -470,7 +472,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
       var v=desired;
       api('/api/target?t='+v.toFixed(1)).then(function(r){
         desired=null; render();
-        toast(r.ok ? ('Consigne '+v.toFixed(1)+' °C') : r.msg==='nopanel' ? 'Signal de sélection non détecté, commandes désactivées' : (r.msg==='target unknown'?'Lecture de la consigne en cours, réessayez':'Impossible de régler la consigne'));
+        toast(r.ok ? ('Consigne '+v.toFixed(1)+' °C') : r.msg==='nopanel' ? 'Signal de sélection non détecté, commandes désactivées' : (r.msg==='target unknown'?'Lecture de la consigne en cours, réessayez':r.msg==='standby'?STANDBY_MSG:'Impossible de régler la consigne'));
       });
     },1500);
   }
@@ -479,7 +481,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
   $('minus').onclick=function(){ step(-0.5); };
   ['jet1','jet2','jet3','aux','light'].forEach(function(k){ $(k).onclick=function(){ cmd(k, featName(k)); }; });
   var mb=$('modes').querySelectorAll('button');
-  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ if(r.ok && VE && VE.on && r.msg!=='no change' && (+m===2 || parseInt(S.mode,10)===2)){ setTimeout(loadVeille,500); } toast(r.ok?('Mode : '+MODE_NAMES[m]+((VE&&VE.on&&+m===2)?' (consigne '+VE.st+' °C d\'abord)':(VE&&VE.on&&parseInt(S.mode,10)===2?' (puis consigne '+VE.wt+' °C)':''))):r.msg==='mode unknown'?'Mode actuel encore inconnu, réessayez dans quelques secondes':(r.msg==='nopanel'?'Signal de sélection non détecté, commandes désactivées':r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'Impossible de changer de mode')); }); }; }
+  for (var i=0;i<mb.length;i++){ mb[i].onclick=function(){ var m=this.getAttribute('data-m'); api('/api/mode?m='+m).then(function(r){ if(r.ok && VE && VE.on && r.msg!=='no change' && (+m===2 || parseInt(S.mode,10)===2)){ setTimeout(loadVeille,500); } toast(r.ok?('Mode : '+MODE_NAMES[m]+((VE&&VE.on&&+m===2)?' (consigne '+VE.st+' °C d\'abord)':(VE&&VE.on&&parseInt(S.mode,10)===2?' (puis consigne '+VE.wt+' °C)':''))):r.msg==='mode unknown'?'Mode actuel encore inconnu, réessayez dans quelques secondes':r.msg==='standby'?STANDBY_MSG:(r.msg==='nopanel'?'Signal de sélection non détecté, commandes désactivées':r.msg==='busy'?'Des commandes sont encore en cours, réessayez':'Impossible de changer de mode')); }); }; }
   $('otaLink').href='http://'+location.hostname+':8080/update';
   $('wifiReset').onclick=function(){
     if(!confirm('Effacer le réseau Wi-Fi enregistré ? Le module redémarre en mode configuration.')) return;
@@ -727,7 +729,9 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
       save.onclick=function(){
         var h=inp.value.trim().toLowerCase();
         if(h && !/^fb06[0-9a-f]{14}$/.test(h)){ toast('Code invalide : 18 caractères commençant par fb06'); return; }
-        post('/api/keys?id='+k.id+'&h='+h).then(function(r){ toast(r.ok?'Code enregistré':'Code refusé'); loadKeys(); });
+        var warn='';
+        if(/^fb06[0-9a-f]{14}$/i.test(h)){ var b6=parseInt(h.substr(12,2),16), b7=parseInt(h.substr(14,2),16); if((b6^b7)!==0xff) warn=' – attention : l\'octet 7 n\'est pas le complément de l\'octet 6, code peut-être mal recopié'; }
+        post('/api/keys?id='+k.id+'&h='+h).then(function(r){ toast(r.ok?('Code enregistré'+warn):'Code refusé'); loadKeys(); });
       };
       var test=document.createElement('button'); test.className='btn sm'; test.textContent='Tester';
       test.onclick=function(){ var h=inp.value.trim().toLowerCase(); if(!/^fb06[0-9a-f]{14}$/.test(h)){ toast('Aucun code à tester'); return; } sendHex(h); };

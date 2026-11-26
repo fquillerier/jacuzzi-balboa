@@ -5,6 +5,7 @@
 #define SCHED_W 8   // weekly entries
 #define SCHED_O 6   // one-shot entries
 #define SCHED_RETRY_MS (15UL * 60UL * 1000UL)   // keep trying a change for 15 min (mode unknown, queue busy…)
+#define SCHED_STANDBY_MS (75UL * 60UL * 1000UL) // …or 75 min while the spa is in Standby (it ends by itself after 1 h)
 
 struct SchedW {
   uint8_t days;   // bit 0 = lundi … bit 6 = dimanche
@@ -201,7 +202,7 @@ void schedTick() {
     String r = requestModeV(schedPending, "Programmation");
     if (r == "ok" || r == "no change") {
       schedPending = -1;
-    } else if (millis() - schedPendingSince > SCHED_RETRY_MS) {
+    } else if (millis() - schedPendingSince > (r == "standby" ? SCHED_STANDBY_MS : SCHED_RETRY_MS)) {
       logAdd('E', String("Programmation : passage en ") + MODE_FR[schedPending] + " impossible (" + r + ")");
       schedPending = -1;
     }

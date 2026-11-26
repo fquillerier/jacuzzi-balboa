@@ -2,6 +2,11 @@
 
 Chaque section s'affiche comme note lors de la mise à jour en ligne (Réglages et informations → Rechercher une mise à jour).
 
+## 1.9.2
+- Arrêt temporaire (Standby, menu 0x5A : Warm ou Cool puis Jets 2, retour automatique au bout d'1 h) reconnu et affiché, même quand l'écran du spa n'affiche pas la température. Pendant ce temps, changement de mode, consigne, veille hors-gel et mise à l'heure attendent (un appui ne ferait que sortir du Standby) ; un changement programmé est retenté jusqu'à 75 min.
+- Chauffage à trois états : arrêt, chauffe, « contrôle de la température » (la pompe tourne pour mesurer l'eau). Le nouveau champ `heat` (0, 1, 2) s'ajoute à `heater` dans /api/status, avec `standby`.
+- Éditeur des codes de touches : avertissement si l'octet 7 n'est pas le complément de l'octet 6 (structure des trames FB06 relevée par le projet netmindz), signe d'un code mal recopié.
+
 ## 1.9.1
 - Veille hors-gel : au passage en Veille, la consigne est d'abord abaissée à 26 °C (eau maintenue vers 15 °C) ; à la sortie, le mode est rétabli puis la consigne de retour (celle d'avant la veille, 34 °C par défaut). S'applique aux boutons de la page, à la programmation et, en option, aux changements faits au clavier du spa. Réglable dans Programmation → Veille hors-gel.
 
