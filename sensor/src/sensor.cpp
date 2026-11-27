@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.9.3"
+#define FW_VERSION "1.9.4"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"
@@ -40,6 +40,8 @@
 #define SETUP_PORTAL_TIMEOUT 300
 // mDNS name: the page is reachable at http://jacuzzi.local
 #define MDNS_NAME "jacuzzi"
+// Name given to the box (DHCP), shown in its list of connected devices: letters, digits and hyphens only
+#define NET_NAME "Jacuzzi-Spa-Balboa"
 
 // MQTT / Home Assistant is optional. Leave the broker empty in the setup page to disable it.
 Preferences prefs;
@@ -667,8 +669,14 @@ void setup() {
 
     // WiFi: connect to the saved network, or open the "Jacuzzi-Setup" hotspot so the
     // network can be chosen from a phone. No passwords in the source code.
+#ifdef ESP32
+    WiFi.setHostname(NET_NAME);   // must come before WiFi.mode() to be sent to the box
+#else
+    WiFi.hostname(NET_NAME);
+#endif
     WiFi.mode(WIFI_STA);
     WiFiManager wm;
+    wm.setHostname(NET_NAME);
     WiFiManagerParameter pMqttHost("mqtt_host", "Serveur MQTT (facultatif, vide = désactivé)", mqttHost, sizeof(mqttHost) - 1);
     WiFiManagerParameter pMqttPort("mqtt_port", "Port MQTT", mqttPort, sizeof(mqttPort) - 1);
     WiFiManagerParameter pMqttUser("mqtt_user", "Utilisateur MQTT", mqttUser, sizeof(mqttUser) - 1);
@@ -702,7 +710,7 @@ void setup() {
     }
     mqttEnabled = strlen(mqttHost) > 0;
 
-    logAdd('S', "Wi-Fi connecté, IP " + WiFi.localIP().toString());
+    logAdd('S', "Wi-Fi connecté, IP " + WiFi.localIP().toString() + ", nom réseau " NET_NAME ", MAC " + WiFi.macAddress());
     clockBegin();
     setPixel(STATUS_WIFI);
 

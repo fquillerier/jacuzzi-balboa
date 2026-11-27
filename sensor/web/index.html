@@ -215,6 +215,10 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
     </section>
     <section class="card">
       <div class="kv"><span>Firmware</span><span id="fw">-</span></div>
+      <div class="kv"><span>Nom sur le réseau</span><span id="nhost">-</span></div>
+      <div class="kv"><span>Adresse IP</span><span id="nip">-</span></div>
+      <div class="kv"><span>Adresse MAC</span><span id="nmac" style="font-family:ui-monospace,monospace">-</span></div>
+      <p class="small">Pour une adresse IP fixe : dans votre box, réservez une adresse (« bail statique ») pour l'appareil <b>Jacuzzi-Spa-Balboa</b>, identifiable aussi par son adresse MAC.</p>
       <div class="kv"><span>Allumé depuis</span><span id="uptime">-</span></div>
       <div class="kv"><span>Home Assistant (MQTT)</span><span id="mqtt">-</span></div>
       <div class="kv"><span>Commandes en attente</span><span id="queue">0</span></div>
@@ -384,6 +388,7 @@ input[type=time],input[type=datetime-local]{font:inherit;font-size:16px;padding:
     $('noPanel').classList.toggle('show', S.panel===false);
     $('spaTime').textContent = (S.time && S.time!=='--:--') ? S.time : '';
     $('fw').textContent = S.fw || '-';
+    if(S.ip!==undefined){ $('nip').textContent=S.ip; $('nmac').textContent=S.mac; $('nhost').textContent=S.host; }
     $('uptime').textContent = fmtUptime(S.uptime);
     $('mqtt').textContent = S.mqtt ? 'Actif' : 'Désactivé';
     var q=parseInt(S.queue||0,10); $('queue').textContent=q;

@@ -211,6 +211,7 @@ La page web se modifie dans `sensor/web/index.html`. Le fichier `sensor/src/webu
 2. La page de configuration s'ouvre (sinon, allez sur `http://192.168.4.1`). Choisissez votre réseau et saisissez son mot de passe. Laissez les champs MQTT vides si vous n'utilisez pas Home Assistant.
 3. L'ESP32 redémarre et rejoint votre réseau.
 4. Page du spa : **http://jacuzzi.local** (ou l'adresse IP de l'ESP32 indiquée par la box).
+5. **Adresse IP fixe (conseillé)** : le module reçoit son adresse de la box (DHCP, dans votre plage 192.168.1.x). Il apparaît dans la liste des appareils de la box sous le nom **Jacuzzi-Spa-Balboa**. Dans la box, réservez-lui une adresse (« bail statique » / « IP fixe », par exemple 192.168.1.50) ; l'adresse IP et l'adresse **MAC** sont aussi affichées dans **Réglages et informations**. Note : 192.168.4.1 ne sert qu'à la première configuration, sur le Wi-Fi « Jacuzzi-Setup ».
 
 Si le réseau enregistré est indisponible au démarrage, le point d'accès Jacuzzi-Setup reste ouvert 5 minutes, puis l'ESP32 redémarre et réessaie.
 

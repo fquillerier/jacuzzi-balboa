@@ -52,6 +52,7 @@ String getStatusJSON() {
   // true while the display text was seen in the last 60 s (Balboa alternates error codes with the temperature)
   j += ", \"msgActive\": " + String((panelMsgSeen && millis() - panelMsgSeen < 60000UL) ? "true" : "false");
   j += ", \"fw\": \"" FW_VERSION "\"";
+  j += ", \"ip\": \"" + WiFi.localIP().toString() + "\", \"mac\": \"" + WiFi.macAddress() + "\", \"host\": \"" NET_NAME "\"";
   j += ", \"boot\": \"" + jsonEscape(bootReason) + "\"";
   j += ", \"boots\": " + String(bootCount);
   j += ", \"p5\": " + String(pin5Rate);

@@ -2,6 +2,9 @@
 
 Chaque section s'affiche comme note lors de la mise à jour en ligne (Réglages et informations → Rechercher une mise à jour).
 
+## 1.9.4
+- Nom sur le réseau « Jacuzzi-Spa-Balboa » (DHCP) : le module se repère facilement dans la liste des appareils de la box, pour lui réserver une adresse IP fixe. Adresse IP, adresse MAC et nom réseau affichés dans Réglages et informations (et dans /api/status).
+
 ## 1.9.3
 - Apprentissage guidé des touches (Réglages → Codes des touches) : pour chaque touche, la page demande d'appuyer sur le clavier du spa, relève le code, le compare au code enregistré, le teste en l'envoyant au spa et l'enregistre ; résumé final copiable. Un code testé sans réaction n'est pas enregistré. Nouvelle route `/api/learn` (dernière touche vue sur le bus).
 
