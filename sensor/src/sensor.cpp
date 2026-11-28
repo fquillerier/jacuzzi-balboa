@@ -32,7 +32,7 @@
 #define LED_BUILTIN 2
 #endif
 
-#define FW_VERSION "1.9.4"
+#define FW_VERSION "2.0.0"
 
 // Name of the setup hotspot shown on the phone on first start (or when the saved WiFi is not reachable)
 #define SETUP_AP_NAME "Jacuzzi-Setup"

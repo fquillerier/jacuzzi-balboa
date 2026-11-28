@@ -211,7 +211,7 @@ La page web se modifie dans `sensor/web/index.html`. Le fichier `sensor/src/webu
 2. La page de configuration s'ouvre (sinon, allez sur `http://192.168.4.1`). Choisissez votre réseau et saisissez son mot de passe. Laissez les champs MQTT vides si vous n'utilisez pas Home Assistant.
 3. L'ESP32 redémarre et rejoint votre réseau.
 4. Page du spa : **http://jacuzzi.local** (ou l'adresse IP de l'ESP32 indiquée par la box).
-5. **Adresse IP fixe (conseillé)** : le module reçoit son adresse de la box (DHCP, dans votre plage 192.168.1.x). Il apparaît dans la liste des appareils de la box sous le nom **Jacuzzi-Spa-Balboa**. Dans la box, réservez-lui une adresse (« bail statique » / « IP fixe », par exemple 192.168.1.50) ; l'adresse IP et l'adresse **MAC** sont aussi affichées dans **Réglages et informations**. Note : 192.168.4.1 ne sert qu'à la première configuration, sur le Wi-Fi « Jacuzzi-Setup ».
+5. **Adresse IP fixe (conseillé)** : le module reçoit son adresse de la box (DHCP, dans votre plage 192.168.1.x). Il apparaît dans la liste des appareils de la box sous le nom **Jacuzzi-Spa-Balboa**. Dans la box, réservez-lui une adresse (« bail statique » / « IP fixe », par exemple 192.168.1.50) ; l'adresse IP et l'adresse **MAC** sont aussi affichées dans **Réglages → Réseau et module**. Note : 192.168.4.1 ne sert qu'à la première configuration, sur le Wi-Fi « Jacuzzi-Setup ».
 
 Si le réseau enregistré est indisponible au démarrage, le point d'accès Jacuzzi-Setup reste ouvert 5 minutes, puis l'ESP32 redémarre et réessaie.
 
@@ -220,28 +220,24 @@ Si le réseau enregistré est indisponible au démarrage, le point d'accès Jacu
 - **Consigne :** appuyez sur + ou − ; la valeur est envoyée après 1,5 s sans appui. Si la consigne est « Inconnue », un appui la lit dans le spa.
 - **Pompes, blower, éclairage :** chaque appui équivaut à la touche correspondante du clavier.
 - **Mode :** Standard / Économie / Veille. Pour un spa peu utilisé : laissez-le en Économie et passez en Standard la veille du bain.
-- **Réglages et informations** (en bas de page) : personnalisation, version du firmware, mise à jour, changement de réseau Wi-Fi.
+- **Onglets** (en bas de l'écran sur téléphone) : **Spa** pour l'usage courant, **Programmes**, **Historique**, **Réglages** (personnalisation, clavier, réseau, mise à jour, Wi-Fi) et **Dépannage** (journal, espion du bus).
 
 ## Aperçu de la page web
 
-Captures de la page **http://jacuzzi.local** sur un téléphone, **avec des données simulées** (températures, trames et journal sont des exemples, pas des relevés de votre spa).
+Captures de la page **http://jacuzzi.local** sur un téléphone, **avec des données simulées** (températures, trames et journal sont des exemples, pas des relevés de votre spa). Depuis la version 2.0, la page est organisée en **cinq onglets**, en bas de l'écran sur téléphone, en haut sur ordinateur. Chaque onglet a sa propre adresse, à mettre en favori : `http://jacuzzi.local/#programmes`, `#historique`, `#reglages`, `#journal`, `#espion`.
 
 <table>
 <tr>
-<td width="50%" valign="top"><b>Accueil</b> : température, consigne, pompes, blower, éclairage, mode et prochain changement programmé.<br><img src="docs/ecrans/1-accueil.png" width="300" alt="Page d'accueil"></td>
-<td width="50%" valign="top"><b>Mode et historique 24 h</b> : les zones colorées indiquent la chauffe en marche.<br><img src="docs/ecrans/2-mode-historique.png" width="300" alt="Mode de chauffe et historique"></td>
+<td width="50%" valign="top"><b>Spa</b> : température, consigne, mode de chauffe et prochain changement programmé, pompes, blower, éclairage, température extérieure.<br><img src="docs/ecrans/onglet-1-spa.png" width="300" alt="Onglet Spa"></td>
+<td width="50%" valign="top"><b>Programmes</b> : changements de mode chaque semaine ou à une date, veille hors-gel, horloge du spa, cycles de filtration.<br><img src="docs/ecrans/onglet-2-programmes.png" width="300" alt="Onglet Programmes"></td>
 </tr>
 <tr>
-<td valign="top"><b>Programmation</b> : changements de mode chaque semaine ou à une date précise (horloge du spa et filtration : voir « Programmation des modes de chauffe »).<br><img src="docs/ecrans/4-programmation.png" width="300" alt="Programmation"></td>
-<td valign="top"><b>Réglages – personnalisation</b> : nom du spa, ville pour la météo, fonctions affichées et leur nom (la pompe 3 n'apparaît sur l'accueil qu'une fois son code saisi).<br><img src="docs/ecrans/3-reglages-1.png" width="300" alt="Réglages, personnalisation"></td>
+<td valign="top"><b>Historique</b> : température sur 24 h avec les plages de chauffe, codes d'erreur du spa.<br><img src="docs/ecrans/onglet-3-historique.png" width="300" alt="Onglet Historique"></td>
+<td valign="top"><b>Réglages</b> : mon spa (nom, ville, fonctions affichées), clavier du spa (apprentissage guidé, codes des touches), réseau et module (IP, MAC, mise à jour, redémarrage). Un point orange sur l'onglet signale une mise à jour disponible.<br><img src="docs/ecrans/onglet-4-reglages.png" width="300" alt="Onglet Réglages"></td>
 </tr>
 <tr>
-<td valign="top"><b>Réglages – codes des touches</b> : un code par touche du clavier, modifiable et testable ; « Jets 3 » est vide tant que le code n'a pas été capturé.<br><img src="docs/ecrans/3-reglages-2.png" width="300" alt="Codes des touches"></td>
-<td valign="top"><b>Réglages – informations et mise à jour</b> : version, temps de fonctionnement, mise à jour par Wi-Fi, redémarrage, changement de réseau.<br><img src="docs/ecrans/3-reglages-3.png" width="300" alt="Informations et mise à jour"></td>
-</tr>
-<tr>
-<td valign="top"><b>Journal (dépannage)</b> : capture des touches du clavier du spa (lettre « P »), notes, export.<br><img src="docs/ecrans/5-journal.png" width="300" alt="Journal"></td>
-<td valign="top"><b>Espion du bus, mode Simple</b> : seules les trames qui changent sont gardées, les octets modifiés sont surlignés (N = notre tour sur J70, A = autre port).<br><img src="docs/ecrans/6-espion.png" width="300" alt="Espion du bus"></td>
+<td valign="top"><b>Dépannage → Journal</b> : état du signal de sélection, journal, capture des touches, notes, export.<br><img src="docs/ecrans/onglet-5-journal.png" width="300" alt="Journal"></td>
+<td valign="top"><b>Dépannage → Espion du bus</b> : trames en direct ; l'enregistrement continue même si vous changez d'onglet.<br><img src="docs/ecrans/onglet-6-espion.png" width="300" alt="Espion du bus"></td>
 </tr>
 </table>
 
@@ -249,7 +245,7 @@ Captures de la page **http://jacuzzi.local** sur un téléphone, **avec des donn
 
 Les codes des touches par défaut viennent de claviers de GL2000 ; celui de **Time** a même un en-tête différent des autres. Avant de compter dessus, faites l'**apprentissage guidé** :
 
-1. **Réglages et informations → Codes des touches → « Apprentissage guidé des touches »**.
+1. **Réglages → Clavier du spa → « Apprentissage guidé des touches »**.
 2. Pour chaque touche (Warm, Cool, Mode, Light, Jets 1, 2, 3, Blower, Time), la page vous demande d'**appuyer une fois sur cette touche du clavier du spa** et indique ce que le spa doit faire.
 3. Le code relevé s'affiche, comparé au code enregistré : identique, différent (il le remplacera) ou nouveau. Un avertissement apparaît si deux touches donnent le même code.
 4. **« Tester ce code »** l'envoie au spa ; répondez si le spa a réagi comme avec la touche. Un code testé sans réaction n'est pas enregistré.
@@ -260,7 +256,7 @@ Les appuis sur Warm, Cool, Mode et Time ne font qu'afficher (consigne, mode, heu
 
 <img src="docs/ecrans/9-apprentissage.png" width="300" alt="Apprentissage : code relevé"> <img src="docs/ecrans/9-apprentissage-resume.png" width="300" alt="Apprentissage : résumé">
 
-Méthode manuelle, toujours disponible : **Journal (dépannage) → « Capturer les touches du clavier du spa »** ; les codes apparaissent avec la lettre **P**, à copier dans les champs des codes.
+Méthode manuelle, toujours disponible : **Dépannage → Journal → « Capturer les touches du clavier du spa »** ; les codes apparaissent avec la lettre **P**, à copier dans les champs des codes.
 
 ## Programmation des modes de chauffe
 
@@ -306,7 +302,7 @@ Les cycles sont exécutés **par le spa**, selon son horloge (2 cycles par jour 
 
 ## Codes des touches et pompe 3
 
-**Réglages et informations → Codes des touches (avancé)** : code envoyé au spa pour chaque touche. Après une capture (Journal → « Capturer les touches du clavier du spa »), collez le code affiché avec la lettre **P**, puis **Enregistrer** ; **Tester** l'envoie une fois au spa. Un champ vide remet le code par défaut.
+**Réglages → Clavier du spa → Codes des touches** : code envoyé au spa pour chaque touche. Après une capture (Journal → « Capturer les touches du clavier du spa »), collez le code affiché avec la lettre **P**, puis **Enregistrer** ; **Tester** l'envoie une fois au spa. Un champ vide remet le code par défaut.
 
 La tuile **Pompe 3** apparaît dès que le code de **Jets 3** est renseigné (il n'a pas de valeur par défaut).
 
@@ -332,9 +328,9 @@ Limite : en dehors de notre tour, le module ne sait pas à quel port une trame e
 
 ## Mise à jour du firmware par Wi-Fi
 
-**En ligne :** **Réglages et informations → Rechercher une mise à jour → Installer**. Le module télécharge la dernière version publiée dans les [Releases de ce dépôt](https://github.com/fquillerier/jacuzzi-balboa/releases), vérifie le fichier (SHA-256) et redémarre. Le téléphone doit avoir Internet. Historique des versions : [CHANGELOG.md](CHANGELOG.md).
+**En ligne :** **Réglages → Rechercher une mise à jour → Installer**. Le module télécharge la dernière version publiée dans les [Releases de ce dépôt](https://github.com/fquillerier/jacuzzi-balboa/releases), vérifie le fichier (SHA-256) et redémarre. Le téléphone doit avoir Internet. Historique des versions : [CHANGELOG.md](CHANGELOG.md).
 
-**Manuelle :** **Réglages et informations → Mise à jour manuelle (fichier)** (ou `http://jacuzzi.local:8080/update`), puis envoyez `jacuzzi-update.bin`.
+**Manuelle :** **Réglages → Mise à jour manuelle (fichier)** (ou `http://jacuzzi.local:8080/update`), puis envoyez `jacuzzi-update.bin`.
 
 ## Sécurité
 

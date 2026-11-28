@@ -2,6 +2,12 @@
 
 Chaque section s'affiche comme note lors de la mise à jour en ligne (Réglages et informations → Rechercher une mise à jour).
 
+## 2.0.0
+- Nouvelle présentation de la page en cinq onglets (Spa, Programmes, Historique, Réglages, Dépannage) à la place des menus repliables : barre d'onglets en bas sur téléphone, en haut sur ordinateur ; une adresse par onglet (`#programmes`, `#historique`, `#reglages`, `#journal`, `#espion`).
+- Onglet Spa : température et consigne dans la même carte, prochain changement programmé cliquable (ouvre Programmes), équipements en tuiles.
+- Dépannage : état du signal de sélection en tête, bascule Journal / Espion du bus ; l'espion continue d'enregistrer quand on change d'onglet.
+- Mise à jour disponible signalée par un point sur l'onglet Réglages. Aucune fonction retirée ; firmware inchangé hors version.
+
 ## 1.9.4
 - Nom sur le réseau « Jacuzzi-Spa-Balboa » (DHCP) : le module se repère facilement dans la liste des appareils de la box, pour lui réserver une adresse IP fixe. Adresse IP, adresse MAC et nom réseau affichés dans Réglages et informations (et dans /api/status).
 
